@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <title>Mock FFT com assíntota em 0</title>
+  <style>
+    :root {
+      --w: 800px; --h: 320px;
+      --bg:#0b0f1a; --grid:#1f2a44; --axis:#8892b0;
+      --curve:#64ffda; --point:#ffaf45; --txt:#cbd5e1;
+    }
+    body{background:#0a0a0a;color:var(--txt);font-family:system-ui;padding:24px}
+    .card{background:var(--bg);border:1px solid #14203a;border-radius:14px;padding:16px}
+    .row{display:flex;gap:12px;align-items:center}
+    input[type="range"]{width:300px}
+    .plot{width:var(--w);height:var(--h);display:block;border-radius:10px;
+      background:linear-gradient(180deg,#0d1324,#0b0f1a)}
+    .legend{font-size:12px;opacity:.9}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="row">
+      <span>i (posição do ponto):</span>
+      <input id="iRange" type="range" min="-5" max="5" step="0.01" value="0">
+      <code id="iVal">0.00</code> &nbsp; f(i)= <code id="fVal">1.000</code>
+    </div>
+
+    <svg id="svg" class="plot" viewBox="0 0 800 320" role="img" aria-label="Curva mockada tipo FFT">
+      <defs>
+        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+          <path d="M 40 0 L 0 0 0 40" fill="none" stroke="var(--grid)" stroke-width="1" opacity="0.25"/>
+        </pattern>
+      </defs>
+      <rect x="0" y="0" width="800" height="320" fill="url(#grid)"></rect>
+
+      <!-- eixos posicionados via JS (em 0,0 do sistema de dados) -->
+      <g id="axes" stroke="var(--axis)" stroke-width="1.2" opacity="0.9">
+        <line id="xAxis"/>
+        <line id="yAxis"/>
+      </g>
+      <g id="labels" class="legend" fill="var(--txt)">
+        <text id="lblX">x</text>
+        <text id="lblY">y</text>
+        <text id="lbl0">0</text>
+        <text id="lbl1">1</text>
+      </g>
+
+      <!-- curva fixa e ponto móvel -->
+      <path id="curve" fill="none" stroke="var(--curve)" stroke-width="2.5"/>
+      <circle id="pt" r="5.5" fill="var(--point)" stroke="white" stroke-width="1.2"></circle>
+    </svg>
+
+    <div class="legend">f(x) = exp(-0.5 * (x/σ)^2), σ = 1.4 (pico 1 em x=0; assíntota em 0 nos extremos).</div>
+  </div>
+
+  <script>
+    // dimensões e área útil
+    const W=800,H=320, PAD_L=20,PAD_R=20,PAD_T=20,PAD_B=20;
+    const plotX0=PAD_L, plotX1=W-PAD_R, plotY0=PAD_T, plotY1=H-PAD_B;
+
+    // domínio
+    const X_MIN=-5, X_MAX=5, sigma=1.4;
+
+    // função (sempre >=0, pico 1 em 0)
+    const f = x => Math.exp(-0.5 * Math.pow(x/sigma,2));
+
+    // escalas
+    const scaleX = x => plotX0 + (x - X_MIN) * (plotX1 - plotX0) / (X_MAX - X_MIN);
+    const scaleY = y => {
+      const yMin=0, yMax=1;
+      return plotY1 - (y - yMin) * (plotY1 - plotY0) / (yMax - yMin);
+    };
+
+    // desenha curva (uma vez)
+    const curve = document.getElementById('curve');
+    (function drawCurve(){
+      const N=800; let d="";
+      for(let k=0;k<=N;k++){
+        const t=k/N, x=X_MIN + t*(X_MAX-X_MIN), y=f(x);
+        d += (k? "L":"M") + scaleX(x).toFixed(2)+" "+scaleY(y).toFixed(2)+" ";
+      }
+      curve.setAttribute("d", d.trim());
+    })();
+
+    // posiciona eixos e rótulos exatamente em y=0 e x=0
+    const xAxis = document.getElementById('xAxis');
+    const yAxis = document.getElementById('yAxis');
+    const lblX = document.getElementById('lblX');
+    const lblY = document.getElementById('lblY');
+    const lbl0 = document.getElementById('lbl0');
+    const lbl1 = document.getElementById('lbl1');
+
+    const AX_Y = scaleY(0);
+    const AX_X = scaleX(0);
+
+    xAxis.setAttribute('x1', plotX0); xAxis.setAttribute('x2', plotX1);
+    xAxis.setAttribute('y1', AX_Y);   xAxis.setAttribute('y2', AX_Y);
+
+    yAxis.setAttribute('x1', AX_X);   yAxis.setAttribute('x2', AX_X);
+    yAxis.setAttribute('y1', plotY0); yAxis.setAttribute('y2', plotY1);
+
+    lblX.setAttribute('x', plotX1-10); lblX.setAttribute('y', AX_Y+16);
+    lblY.setAttribute('x', AX_X+8);    lblY.setAttribute('y', plotY0+12);
+
+    lbl0.textContent = '0';
+    lbl0.setAttribute('x', AX_X-12);   lbl0.setAttribute('y', AX_Y+14);
+
+    lbl1.textContent = '1';
+    lbl1.setAttribute('x', AX_X+8);    lbl1.setAttribute('y', scaleY(1)+4);
+
+    // ponto destacado (só ele atualiza)
+    const pt = document.getElementById('pt');
+    const iRange = document.getElementById('iRange');
+    const iVal = document.getElementById('iVal');
+    const fVal = document.getElementById('fVal');
+
+    function updatePoint(i){
+      const y=f(i);
+      pt.setAttribute('cx', scaleX(i));
+      pt.setAttribute('cy', scaleY(y));
+      iVal.textContent = i.toFixed(2);
+      fVal.textContent = y.toFixed(3);
+    }
+
+    let i=0; updatePoint(i);
+    iRange.addEventListener('input', e => { i=parseFloat(e.target.value); updatePoint(i); });
+
+    // DICA: se quiser “lóbulo” com zeros sem ficar negativo, use |sinc| ou (sinc)^2:
+    // function f(x){ if(x===0) return 1; const s=Math.sin(x)/x; return s*s; }
+  </script>
+</body>
+</html>
