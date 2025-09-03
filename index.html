@@ -227,6 +227,12 @@
         margin-right: 5px;
         border-radius: 3px;
     }
+    
+    /* Estilo para valores acima da média */
+    .above-average {
+        color: #2196F3;
+        font-weight: bold;
+    }
 </style>
 </head>
 <body>
@@ -504,16 +510,20 @@ function renderComparisonTable() {
     const tableRows = Object.keys(averages).map(key => {
         const avg = (averages[key].sum / averages[key].count).toFixed(2);
         let fileValue = '-';
+        let isAboveAverage = false;
         
         if (selectedFileIndex !== null) {
             const selectedData = allData[selectedFileIndex][0];
-            fileValue = selectedData[key] !== undefined ? selectedData[key].toFixed(2) : '-';
+            if (selectedData[key] !== undefined) {
+                fileValue = selectedData[key].toFixed(2);
+                isAboveAverage = selectedData[key] > parseFloat(avg);
+            }
         }
         
         return `<tr>
             <td>${key}</td>
             <td>${avg}</td>
-            <td>${fileValue}</td>
+            <td class="${isAboveAverage ? 'above-average' : ''}">${fileValue}</td>
         </tr>`;
     }).join('');
 
