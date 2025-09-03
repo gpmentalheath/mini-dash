@@ -121,6 +121,19 @@
         margin-right: 6px;
     }
 
+    /* Checkboxes para respondentes */
+    #respondent-checkboxes {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 8px;
+        font-size: 12px;
+        margin-top: 15px;
+        padding: 10px;
+        background-color: #f9f9f9;
+        border-radius: 6px;
+        border: 1px solid #eee;
+    }
+
     select {
         margin-bottom: 15px;
         padding: 8px;
@@ -141,7 +154,7 @@
     }
 
     /* Botões */
-    #metricsToggleBtn {
+    .toggle-btn {
         padding: 8px 12px;
         margin-bottom: 10px;
         cursor: pointer;
@@ -151,9 +164,10 @@
         border-radius: 4px;
         font-size: 14px;
         transition: background-color 0.3s;
+        margin-right: 10px;
     }
     
-    #metricsToggleBtn:hover {
+    .toggle-btn:hover {
         background-color: #45a049;
     }
 
@@ -227,11 +241,16 @@
 
     <input type="file" id="fileInput" multiple accept=".json">
 
-    <!-- Botão para mostrar/ocultar métricas -->
-    <button id="metricsToggleBtn" onclick="toggleMetrics()">Seleção Métricas ▼</button>
+    <!-- Botões para mostrar/ocultar métricas e respondentes -->
+    <button id="metricsToggleBtn" class="toggle-btn" onclick="toggleMetrics()">Seleção Métricas ▼</button>
+    <button id="respondentsToggleBtn" class="toggle-btn" onclick="toggleRespondents()">Seleção Respondentes ▼</button>
 
     <div id="metricsContainer" style="display:none;">
         <div id="checkboxes"></div>
+    </div>
+
+    <div id="respondentsContainer" style="display:none;">
+        <div id="respondent-checkboxes"></div>
     </div>
 </div>
 
@@ -267,6 +286,7 @@ let allData = [];
 let fileNames = [];
 let selectedVariables = ['custom_wellness_adjusted', 'Authentic'];
 let selectedFileIndex = null;
+let visibleRespondents = []; // Array para controlar quais respondentes estão visíveis
 
 // Registrar o plugin de annotation
 Chart.register({
@@ -321,11 +341,28 @@ function toggleMetrics() {
     }
 }
 
+function toggleRespondents() {
+    const container = document.getElementById('respondentsContainer');
+    const btn = document.getElementById('respondentsToggleBtn');
+    if (container.style.display === 'none') {
+        container.style.display = 'block';
+        btn.textContent = 'Ocultar Respondentes ▲';
+        // Ajustar o espaçamento quando os respondentes são exibidos
+        document.querySelector('.header-spacer').style.height = '280px';
+    } else {
+        container.style.display = 'none';
+        btn.textContent = 'Seleção Respondentes ▼';
+        // Restaurar o espaçamento padrão
+        document.querySelector('.header-spacer').style.height = '220px';
+    }
+}
+
 function processFiles() {
     const files = document.getElementById('fileInput').files;
     allData = [];
     fileNames = [];
     selectedFileIndex = null;
+    visibleRespondents = []; // Resetar os respondentes visíveis
 
     if (files.length === 0) {
         alert("Por favor, selecione pelo menos um arquivo JSON.");
@@ -346,9 +383,12 @@ function processFiles() {
                 
                 allData.push(Array.isArray(jsonData) ? jsonData : [jsonData]);
                 fileNames.push(firstItem?.name_if_id || files[i].name.replace('.json', ''));
+                // Inicialmente todos os respondentes estão visíveis
+                visibleRespondents.push(true);
 
                 if (allData.length === files.length) {
                     renderCheckboxes();
+                    renderRespondentCheckboxes();
                     renderFileSelector();
                     renderComparisonTable(); 
                     generateBarChart();
@@ -381,11 +421,26 @@ function renderCheckboxes() {
     `).join('');
 }
 
+function renderRespondentCheckboxes() {
+    if (allData.length === 0) return;
+    
+    const container = document.getElementById('respondent-checkboxes');
+    
+    container.innerHTML = fileNames.map((name, index) => `
+        <label class="checkbox-label">
+            <input type="checkbox" value="${index}" ${visibleRespondents[index] ? 'checked' : ''} onchange="toggleRespondent(${index})">
+            ${name}
+        </label>
+    `).join('');
+}
+
 function renderFileSelector() {
     let selectorHTML = '<label>Comparar com respondente:</label><select onchange="selectFile(this)">';
     selectorHTML += '<option value="">Nenhum</option>';
     fileNames.forEach((name, index) => {
-        selectorHTML += `<option value="${index}">${name}</option>`;
+        if (visibleRespondents[index]) {
+            selectorHTML += `<option value="${index}">${name}</option>`;
+        }
     });
     selectorHTML += '</select>';
     document.getElementById('file-selector-container').innerHTML = selectorHTML;
@@ -399,6 +454,14 @@ function toggleVariable(variable) {
         selectedVariables.splice(idx, 1);
     }
 
+    generateBarChart();
+    generateRadarChart();
+    generateFFTChart();
+}
+
+function toggleRespondent(index) {
+    visibleRespondents[index] = !visibleRespondents[index];
+    renderFileSelector();
     generateBarChart();
     generateRadarChart();
     generateFFTChart();
@@ -421,7 +484,9 @@ function renderComparisonTable() {
     }
 
     const averages = {};
-    allData.forEach(data => {
+    allData.forEach((data, idx) => {
+        if (!visibleRespondents[idx]) return; // Pular respondentes ocultos
+        
         data.forEach(item => {
             for (const key in item) {
                 if (typeof item[key] === 'number') {
@@ -474,10 +539,13 @@ function generateBarChart() {
     if (window.barChartInstance) window.barChartInstance.destroy();
 
     const datasets = selectedVariables.map(variable => {
-        const dataPoints = allData.map(data => {
+        const dataPoints = allData.map((data, index) => {
+            if (!visibleRespondents[index]) return null; // Pular respondentes ocultos
+            
             const values = data.map(item => item[variable]).filter(v => typeof v === 'number');
             return values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
-        });
+        }).filter(v => v !== null); // Remover valores nulos
+        
         const color = getRandomColor();
         return {
             label: variable,
@@ -488,10 +556,13 @@ function generateBarChart() {
         };
     });
 
+    // Filtrar labels para mostrar apenas os respondentes visíveis
+    const visibleLabels = fileNames.filter((_, index) => visibleRespondents[index]);
+
     window.barChartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: fileNames,
+            labels: visibleLabels,
             datasets
         },
         options: {
@@ -531,10 +602,13 @@ function generateRadarChart() {
     if (window.radarChartInstance) window.radarChartInstance.destroy();
 
     const datasets = selectedVariables.map(variable => {
-        const dataPoints = allData.map(data => {
+        const dataPoints = allData.map((data, index) => {
+            if (!visibleRespondents[index]) return null; // Pular respondentes ocultos
+            
             const values = data.map(item => item[variable]).filter(v => typeof v === 'number');
             return values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
-        });
+        }).filter(v => v !== null); // Remover valores nulos
+        
         const color = getRandomColor();
         return {
             label: variable,
@@ -547,10 +621,13 @@ function generateRadarChart() {
         };
     });
 
+    // Filtrar labels para mostrar apenas os respondentes visíveis
+    const visibleLabels = fileNames.filter((_, index) => visibleRespondents[index]);
+
     window.radarChartInstance = new Chart(ctx, {
         type: 'radar',
         data: {
-            labels: fileNames,
+            labels: visibleLabels,
             datasets
         },
         options: {
@@ -623,8 +700,10 @@ function generateFFTChart() {
         tension: 0.3
     };
 
-    // Pontos das médias de cogproc de todos os arquivos
+    // Pontos das médias de cogproc de todos os arquivos visíveis
     const meanPoints = allData.map((data, idx) => {
+        if (!visibleRespondents[idx]) return null; // Pular respondentes ocultos
+        
         const cogprocValues = data.map(item => item['cogproc']).filter(v => typeof v === 'number');
         if(cogprocValues.length === 0) return null;
         
@@ -649,9 +728,9 @@ function generateFFTChart() {
         showLine: false
     };
 
-    // Ponto do respondente selecionado (se houver)
+    // Ponto do respondente selecionado (se houver e estiver visível)
     let selectedPoint = null;
-    if (selectedFileIndex !== null) {
+    if (selectedFileIndex !== null && visibleRespondents[selectedFileIndex]) {
         const selectedData = allData[selectedFileIndex][0];
         if (selectedData && typeof selectedData['cogproc'] === 'number') {
             const cogproc = selectedData['cogproc'];
