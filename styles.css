@@ -231,3 +231,85 @@ input[type="file"] {
     color: #F44336;
     font-weight: bold;
 }
+
+/* Estilos para a seção de benchmark */
+#benchmark-section {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+}
+
+#benchmark-results table {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+#benchmark-results th {
+    background-color: #e9ecef;
+    font-weight: bold;
+}
+
+/* Melhorar a visualização dos percentis */
+.percentile-high {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.percentile-medium {
+    color: #ffc107;
+    font-weight: bold;
+}
+
+.percentile-low {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+/* Estilo para a legenda do benchmark */
+.benchmark-legend {
+    display: flex;
+    justify-content: center;
+    margin-top: 15px;
+    gap: 20px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+}
+
+.legend-color {
+    width: 15px;
+    height: 15px;
+    margin-right: 5px;
+    border-radius: 3px;
+}
+
+/* Loader styles */
+#benchmark-loader {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    margin: 20px 0;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loader-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #4caf50;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 10px;
+}

@@ -3,6 +3,9 @@ let fileNames = [];
 let selectedVariables = ['custom_wellness_adjusted', 'Authentic'];
 let selectedFileIndex = null;
 let visibleRespondents = []; // Array para controlar quais respondentes estão visíveis
+let benchmarkData = null;
+let benchmarkAverages = {};
+let benchmarkRanks = {};
 
 // Registrar o plugin de annotation
 Chart.register({
@@ -42,6 +45,7 @@ Chart.register({
 // Inicializar eventos após o carregamento do DOM
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('fileInput').addEventListener('change', processFiles);
+    document.getElementById('benchmarkFileInput').addEventListener('change', processBenchmarkFile);
     document.getElementById('metricsToggleBtn').addEventListener('click', toggleMetrics);
     document.getElementById('respondentsToggleBtn').addEventListener('click', toggleRespondents);
 });
@@ -115,6 +119,12 @@ function processFiles() {
                     generateBarChart();
                     generateRadarChart();
                     generateFFTChart();
+                    
+                    // Atualizar benchmark se estiver ativo
+                    if (benchmarkData) {
+                        renderBenchmarkComparison();
+                        generateBenchmarkChart();
+                    }
                 }
             } catch (error) {
                 console.error("Erro ao processar arquivo:", error);
@@ -178,6 +188,12 @@ function toggleVariable(variable) {
     generateBarChart();
     generateRadarChart();
     generateFFTChart();
+    
+    // Atualizar benchmark se estiver ativo
+    if (benchmarkData) {
+        renderBenchmarkComparison();
+        generateBenchmarkChart();
+    }
 }
 
 function toggleRespondent(index) {
@@ -186,6 +202,12 @@ function toggleRespondent(index) {
     generateBarChart();
     generateRadarChart();
     generateFFTChart();
+    
+    // Atualizar benchmark se estiver ativo
+    if (benchmarkData) {
+        renderBenchmarkComparison();
+        generateBenchmarkChart();
+    }
 }
 
 function selectFile(select) {
@@ -638,6 +660,252 @@ function addRegionLegend(regions) {
     const chartContainer = document.querySelector('#fftChart').parentNode;
     chartContainer.style.position = 'relative';
     chartContainer.appendChild(legend);
+}
+
+// Função para processar o arquivo de benchmark
+function processBenchmarkFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Mostrar loader
+    document.getElementById('benchmark-loader').style.display = 'block';
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            
+            // Supondo que os dados estão na primeira planilha
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            
+            // Converter para JSON
+            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+            
+            if (jsonData.length > 0) {
+                benchmarkData = jsonData;
+                calculateBenchmarkAverages();
+                calculateBenchmarkRanks();
+                document.getElementById('benchmark-section').style.display = 'block';
+                renderBenchmarkComparison();
+                generateBenchmarkChart();
+            }
+        } catch (error) {
+            console.error("Erro ao processar arquivo de benchmark:", error);
+            alert("Erro ao processar arquivo de benchmark: " + error.message);
+        } finally {
+            // Esconder loader
+            document.getElementById('benchmark-loader').style.display = 'none';
+        }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+// Calcular médias do benchmark
+function calculateBenchmarkAverages() {
+    if (!benchmarkData || benchmarkData.length === 0) return;
+    
+    benchmarkAverages = {};
+    
+    // Para cada coluna numérica, calcular a média
+    Object.keys(benchmarkData[0]).forEach(key => {
+        if (key === 'codigo_pesquisa' || key === 'externalId' || key === 'code') return;
+        
+        const values = benchmarkData.map(row => parseFloat(row[key])).filter(val => !isNaN(val));
+        if (values.length > 0) {
+            benchmarkAverages[key] = values.reduce((sum, val) => sum + val, 0) / values.length;
+        }
+    });
+}
+
+// Calcular ranks do benchmark
+function calculateBenchmarkRanks() {
+    if (!benchmarkData || benchmarkData.length === 0) return;
+    
+    benchmarkRanks = {};
+    
+    // Para cada coluna numérica, calcular o rank
+    Object.keys(benchmarkData[0]).forEach(key => {
+        if (key === 'codigo_pesquisa' || key === 'externalId' || key === 'code') return;
+        
+        const values = benchmarkData.map(row => parseFloat(row[key])).filter(val => !isNaN(val));
+        if (values.length > 0) {
+            // Ordenar valores para calcular percentis
+            values.sort((a, b) => a - b);
+            benchmarkRanks[key] = values;
+        }
+    });
+}
+
+// Calcular o rank de um valor específico
+function calculateRank(variable, value) {
+    if (!benchmarkRanks[variable] || benchmarkRanks[variable].length === 0) return 0;
+    
+    const values = benchmarkRanks[variable];
+    // Contar quantos valores são menores que o valor fornecido
+    const countBelow = values.filter(v => v < value).length;
+    
+    // Calcular rank (posição percentual)
+    return (countBelow / values.length) * 100;
+}
+
+// Renderizar comparação com benchmark
+function renderBenchmarkComparison() {
+    const container = document.getElementById('benchmark-results');
+    
+    if (!benchmarkData || allData.length === 0) {
+        container.innerHTML = '<p>Nenhum dado disponível para comparação.</p>';
+        return;
+    }
+    
+    // Calcular médias do grupo atual
+    const groupAverages = calculateGroupAverages();
+    
+    // Criar tabela comparativa
+    let tableHTML = `
+        <table>
+            <thead>
+                <tr>
+                    <th>Variável</th>
+                    <th>Média do Grupo</th>
+                    <th>Média Top 175</th>
+                    <th>Diferença</th>
+                    <th>Ranking</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    // Para cada variável selecionada, mostrar comparação
+    selectedVariables.forEach(variable => {
+        if (benchmarkAverages[variable] !== undefined && groupAverages[variable] !== undefined) {
+            const groupAvg = groupAverages[variable];
+            const benchAvg = benchmarkAverages[variable];
+            const difference = groupAvg - benchAvg;
+            const rank = calculateRank(variable, groupAvg);
+            
+            let diffClass = '';
+            if (difference > 0) diffClass = 'above-average';
+            else if (difference < 0) diffClass = 'below-average';
+            
+            // Classificar o rank
+            let rankClass = '';
+            let rankText = '';
+            if (rank >= 80) {
+                rankClass = 'percentile-high';
+                rankText = `Top ${Math.round(100 - rank)}%`;
+            } else if (rank >= 50) {
+                rankClass = 'percentile-medium';
+                rankText = `Acima da média (${Math.round(rank)}%)`;
+            } else {
+                rankClass = 'percentile-low';
+                rankText = `Abaixo da média (${Math.round(rank)}%)`;
+            }
+            
+            tableHTML += `
+                <tr>
+                    <td>${variable}</td>
+                    <td>${groupAvg.toFixed(2)}</td>
+                    <td>${benchAvg.toFixed(2)}</td>
+                    <td class="${diffClass}">${difference > 0 ? '+' : ''}${difference.toFixed(2)}</td>
+                    <td class="${rankClass}">${rankText}</td>
+                </tr>
+            `;
+        }
+    });
+    
+    tableHTML += `</tbody></table>`;
+    container.innerHTML = tableHTML;
+}
+
+// Calcular médias do grupo atual
+function calculateGroupAverages() {
+    const averages = {};
+    
+    allData.forEach((data, idx) => {
+        if (!visibleRespondents[idx]) return;
+        
+        data.forEach(item => {
+            for (const key in item) {
+                if (typeof item[key] === 'number') {
+                    if (!averages[key]) averages[key] = { sum: 0, count: 0 };
+                    averages[key].sum += item[key];
+                    averages[key].count += 1;
+                }
+            }
+        });
+    });
+    
+    // Calcular médias finais
+    const result = {};
+    Object.keys(averages).forEach(key => {
+        result[key] = averages[key].sum / averages[key].count;
+    });
+    
+    return result;
+}
+
+// Gerar gráfico de comparação com benchmark
+function generateBenchmarkChart() {
+    const ctx = document.getElementById('benchmarkChart').getContext('2d');
+    if (window.benchmarkChartInstance) window.benchmarkChartInstance.destroy();
+    
+    const groupAverages = calculateGroupAverages();
+    
+    // Preparar dados para o gráfico
+    const labels = selectedVariables.filter(v => 
+        benchmarkAverages[v] !== undefined && groupAverages[v] !== undefined
+    );
+    
+    const groupData = labels.map(v => groupAverages[v]);
+    const benchmarkData = labels.map(v => benchmarkAverages[v]);
+    
+    window.benchmarkChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Média do Grupo',
+                    data: groupData,
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Média Top 175',
+                    data: benchmarkData,
+                    backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ' + context.raw.toFixed(2);
+                        }
+                    }
+                }
+            },
+            scales: { 
+                y: { 
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Valor'
+                    }
+                }
+            }
+        }
+    });
 }
 
 // ======= UTIL =======

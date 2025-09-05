@@ -1,35 +1,48 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Comparativo de Dados</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.0.1/dist/chartjs-plugin-annotation.min.js"></script>
-</head>
-<body>
+  </head>
+  <body>
     <!-- Cabeçalho fixo -->
     <div class="fixed-header">
-        <h2>Comparativo de Dados</h2>
+      <h2>Comparativo de Dados</h2>
 
-        <div class="info-box">
-            <strong>Instruções:</strong> Selecione arquivos JSON que contenham as métricas de processamento dos respondentes.
-        </div>
+      <div class="info-box">
+        <strong>Instruções:</strong> Selecione arquivos JSON que contenham as
+        métricas de processamento dos respondentes.
+      </div>
 
-        <input type="file" id="fileInput" multiple accept=".json">
+      <input type="file" id="fileInput" multiple accept=".json" />
 
-        <!-- Botões para mostrar/ocultar métricas e respondentes -->
-        <button id="metricsToggleBtn" class="toggle-btn">Seleção Métricas ▼</button>
-        <button id="respondentsToggleBtn" class="toggle-btn">Seleção Respondentes ▼</button>
+      <!-- Novo input para upload da planilha de benchmark -->
+      <input
+        type="file"
+        id="benchmarkFileInput"
+        accept=".xlsx,.xls"
+        style="margin-top: 10px"
+      />
 
-        <div id="metricsContainer" style="display:none;">
-            <div id="checkboxes"></div>
-        </div>
+      <!-- Botões para mostrar/ocultar métricas e respondentes -->
+      <button id="metricsToggleBtn" class="toggle-btn">
+        Seleção Métricas ▼
+      </button>
+      <button id="respondentsToggleBtn" class="toggle-btn">
+        Seleção Respondentes ▼
+      </button>
 
-        <div id="respondentsContainer" style="display:none;">
-            <div id="respondent-checkboxes"></div>
-        </div>
+      <div id="metricsContainer" style="display: none">
+        <div id="checkboxes"></div>
+      </div>
+
+      <div id="respondentsContainer" style="display: none">
+        <div id="respondent-checkboxes"></div>
+      </div>
     </div>
 
     <!-- Espaço reservado para o cabeçalho fixo -->
@@ -37,28 +50,65 @@
 
     <!-- Container principal com scroll -->
     <div id="main-container">
-        <div id="container">
-            <!-- Coluna esquerda: tabela comparativa -->
-            <div id="left-column">
-                <div id="file-selector-container"></div>
-                <div id="averages"></div>
-            </div>
-
-            <!-- Coluna direita: gráficos -->
-            <div id="right-column">
-                <div class="chart-container">
-                    <canvas id="barChart"></canvas>
-                </div>
-                <div class="chart-container">
-                    <canvas id="radarChart"></canvas>
-                </div>
-                <div class="chart-container">
-                    <canvas id="fftChart"></canvas>
-                </div>
-            </div>
+      <div id="container">
+        <!-- Coluna esquerda: tabela comparativa -->
+        <div id="left-column">
+          <div id="file-selector-container"></div>
+          <div id="averages"></div>
         </div>
+
+        <!-- Coluna direita: gráficos -->
+        <div id="right-column">
+          <div class="chart-container">
+            <canvas id="barChart"></canvas>
+          </div>
+          <div class="chart-container">
+            <canvas id="radarChart"></canvas>
+          </div>
+          <div class="chart-container">
+            <canvas id="fftChart"></canvas>
+          </div>
+
+          <!-- Nova área de benchmarking (inicialmente oculta) -->
+          <div id="benchmark-section" style="display: none">
+            <h3>Comparativo com Top 175 Empresas</h3>
+            <div id="benchmark-results"></div>
+            <div class="chart-container">
+              <canvas id="benchmarkChart"></canvas>
+            </div>
+          </div>
+          <div id="benchmark-loader" style="display: none; margin-top: 10px">
+            <div style="display: flex; align-items: center; gap: 10px">
+              <div
+                style="
+                  width: 20px;
+                  height: 20px;
+                  border: 2px solid #f3f3f3;
+                  border-top: 2px solid #4caf50;
+                  border-radius: 50%;
+                  animation: spin 1s linear infinite;
+                "
+              ></div>
+              <span>Processando planilha de benchmark...</span>
+            </div>
+          </div>
+
+          <style>
+            @keyframes spin {
+              0% {
+                transform: rotate(0deg);
+              }
+              100% {
+                transform: rotate(360deg);
+              }
+            }
+          </style>
+        </div>
+      </div>
     </div>
 
+    <!-- Adicione estas bibliotecas para processamento de Excel -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="script.js"></script>
-</body>
+  </body>
 </html>
