@@ -7,6 +7,23 @@ let benchmarkData = null;
 let benchmarkAverages = {};
 let benchmarkRanks = {};
 
+// Dados de importância das variáveis
+const importanceWeights = {
+  'intellectual': 80,
+  'imaginative': 75,
+  'sociable': 70,
+  'Reatividade': 85,
+  'self_conscious': 78,
+  'agreeableness': 72,
+  'openness': 73,
+  'organized': 68,
+  'cautious': 35,
+  'artistic': 30,
+  'humble': 20,
+  'assertive': 90,
+  'adventurous': 80
+};
+
 // Registrar o plugin de annotation
 Chart.register({
     id: 'annotation',
@@ -119,6 +136,7 @@ function processFiles() {
                     generateBarChart();
                     generateRadarChart();
                     generateFFTChart();
+                    generateImportanceChart();
                     
                     // Atualizar benchmark se estiver ativo
                     if (benchmarkData) {
@@ -202,6 +220,7 @@ function toggleRespondent(index) {
     generateBarChart();
     generateRadarChart();
     generateFFTChart();
+    generateImportanceChart();
     
     // Atualizar benchmark se estiver ativo
     if (benchmarkData) {
@@ -215,6 +234,7 @@ function selectFile(select) {
     selectedFileIndex = val === '' ? null : parseInt(val);
     renderComparisonTable();
     generateFFTChart();
+    generateImportanceChart();
 }
 
 function renderComparisonTable() {
@@ -660,6 +680,229 @@ function addRegionLegend(regions) {
     const chartContainer = document.querySelector('#fftChart').parentNode;
     chartContainer.style.position = 'relative';
     chartContainer.appendChild(legend);
+}
+
+// Gerar gráfico de importância
+function generateImportanceChart() {
+    const ctx = document.getElementById('importanceChart').getContext('2d');
+    if (window.importanceChartInstance) window.importanceChartInstance.destroy();
+
+    // Verificar se há um respondente selecionado
+    if (selectedFileIndex === null || !visibleRespondents[selectedFileIndex]) {
+        // Limpar o gráfico se não houver respondente selecionado
+        window.importanceChartInstance = new Chart(ctx, {
+            type: 'scatter',
+            data: { datasets: [] },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    title: {
+                        display: true,
+                        text: 'Selecione um respondente na tabela para visualizar'
+                    }
+                }
+            }
+        });
+        return;
+    }
+
+    // Obter dados do respondente selecionado
+    const selectedData = allData[selectedFileIndex][0];
+    const selectedName = fileNames[selectedFileIndex];
+    
+    // Criar array de métricas disponíveis (apenas as que existem nos dados e têm peso definido)
+    const availableMetrics = Object.keys(importanceWeights).filter(variable => 
+        selectedData[variable] !== undefined && typeof selectedData[variable] === 'number'
+    );
+
+    // Remover o container de checkboxes de métricas se existir
+    const metricsContainer = document.getElementById('metrics-checkboxes-container');
+    if (metricsContainer) {
+        metricsContainer.remove();
+    }
+
+    // Criar datasets individuais para cada variável (para ter legendas separadas)
+    const datasets = availableMetrics.map(variable => {
+        const color = getColorForMetric(variable);
+        return {
+            label: variable,
+            data: [{
+                x: importanceWeights[variable],
+                y: selectedData[variable],
+                variable: variable
+            }],
+            backgroundColor: color,
+            borderColor: color,
+            pointRadius: 8,
+            pointHoverRadius: 10,
+            showLine: false
+        };
+    });
+
+    // Linhas divisórias para os quadrantes
+    const verticalLine = {
+        type: 'line',
+        xMin: 50,
+        xMax: 50,
+        yMin: 0,
+        yMax: 100,
+        borderColor: 'rgba(0, 0, 0, 0.7)',
+        borderWidth: 2,
+        label: {
+            content: 'Eixo Y',
+            enabled: true,
+            position: 'center'
+        }
+    };
+
+    const horizontalLine = {
+        type: 'line',
+        xMin: 0,
+        xMax: 100,
+        yMin: 50,
+        yMax: 50,
+        borderColor: 'rgba(0, 0, 0, 0.7)',
+        borderWidth: 2,
+        label: {
+            content: 'Eixo X',
+            enabled: true,
+            position: 'center'
+        }
+    };
+
+    // Anotações para os quadrantes
+    const quadrantAnnotations = [
+        {
+            type: 'label',
+            xValue: 25,
+            yValue: 75,
+            content: 'Q1: Força no Passado',
+            backgroundColor: 'rgba(0, 255, 0, 0.2)',
+            font: { size: 12, weight: 'bold' }
+        },
+        {
+            type: 'label',
+            xValue: 75,
+            yValue: 75,
+            content: 'Q2: Time Preparado para o Futuro',
+            backgroundColor: 'rgba(255, 255, 0, 0.2)',
+            font: { size: 12, weight: 'bold' }
+        },
+        {
+            type: 'label',
+            xValue: 25,
+            yValue: 25,
+            content: 'Q3: Baixa Prioridade',
+            backgroundColor: 'rgba(255, 165, 0, 0.2)',
+            font: { size: 12, weight: 'bold' }
+        },
+        {
+            type: 'label',
+            xValue: 75,
+            yValue: 25,
+            content: 'Q4: Alerta de Desenvolvimento',
+            backgroundColor: 'rgba(255, 0, 0, 0.2)',
+            font: { size: 12, weight: 'bold' }
+        }
+    ];
+
+    window.importanceChartInstance = new Chart(ctx, {
+        type: 'scatter',
+        data: {
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        generateLabels: function(chart) {
+                            // Personalizar as labels da legenda para mostrar as variáveis
+                            return chart.data.datasets.map((dataset, i) => {
+                                return {
+                                    text: dataset.label,
+                                    fillStyle: dataset.backgroundColor,
+                                    strokeStyle: dataset.borderColor,
+                                    lineWidth: 1,
+                                    pointStyle: 'circle',
+                                    hidden: false
+                                };
+                            });
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const point = context.raw;
+                            return `${context.dataset.label} (Peso: ${point.x}, Nota: ${point.y.toFixed(2)})`;
+                        }
+                    }
+                },
+                annotation: {
+                    annotations: {
+                        verticalLine,
+                        horizontalLine,
+                        ...quadrantAnnotations.reduce((acc, annotation, index) => {
+                            acc[`quadrant${index + 1}`] = annotation;
+                            return acc;
+                        }, {})
+                    }
+                },
+                title: {
+                    display: true,
+                    text: `Análise de Importância vs. Desempenho - ${selectedName}`,
+                    font: {
+                        size: 16
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    type: 'linear',
+                    position: 'bottom',
+                    min: 0,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Importância (Peso)'
+                    },
+                    grid: {
+                        color: function(context) {
+                            return context.tick.value === 50 ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.1)';
+                        }
+                    }
+                },
+                y: {
+                    min: 0,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Desempenho (Nota)'
+                    },
+                    grid: {
+                        color: function(context) {
+                            return context.tick.value === 50 ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.1)';
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Função auxiliar para obter cor consistente para cada métrica
+function getColorForMetric(metric) {
+    if (!window.metricColors) window.metricColors = {};
+    if (!window.metricColors[metric]) {
+        window.metricColors[metric] = getRandomColor();
+    }
+    return window.metricColors[metric];
 }
 
 // Função para processar o arquivo de benchmark

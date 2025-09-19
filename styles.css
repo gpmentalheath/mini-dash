@@ -313,3 +313,28 @@ input[type="file"] {
     animation: spin 1s linear infinite;
     margin-right: 10px;
 }
+
+/* Estilo para os quadrantes no gráfico de importância */
+.quadrant-label {
+    font-size: 12px;
+    font-weight: bold;
+    padding: 5px;
+    border-radius: 4px;
+    text-align: center;
+}
+
+/* Container para checkboxes de métricas */
+#metrics-checkboxes-container {
+    margin: 15px 0;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+#metrics-checkboxes-container h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #495057;
+    font-size: 16px;
+}
