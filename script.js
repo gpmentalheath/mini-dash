@@ -1,6 +1,11 @@
 let allData = [];
 let fileNames = [];
-let selectedVariables = ['custom_wellness_adjusted', 'Authentic'];
+// Variáveis que devem ser selecionadas automaticamente
+const autoSelectedVariables = [
+    'Authentic', 'sociable', 'openness', 'organized', 
+    'cautious', 'humble', 'assertive', 'adventurous'
+];
+let selectedVariables = [...autoSelectedVariables];
 let selectedFileIndex = null;
 let visibleRespondents = []; // Array para controlar quais respondentes estão visíveis
 let benchmarkData = null;
@@ -129,6 +134,9 @@ function processFiles() {
                 visibleRespondents.push(true);
 
                 if (allData.length === files.length) {
+                    // Selecionar automaticamente as variáveis especificadas
+                    selectedVariables = [...autoSelectedVariables];
+                    
                     renderCheckboxes();
                     renderRespondentCheckboxes();
                     renderFileSelector();
@@ -779,7 +787,7 @@ function generateImportanceChart() {
             xValue: 25,
             yValue: 75,
             content: 'Q1: Força no Passado',
-            backgroundColor: 'rgba(0, 255, 0, 0.2)',
+            backgroundColor: 'rgba(255, 255, 0, 0.2)',
             font: { size: 12, weight: 'bold' }
         },
         {
@@ -787,7 +795,7 @@ function generateImportanceChart() {
             xValue: 75,
             yValue: 75,
             content: 'Q2: Time Preparado para o Futuro',
-            backgroundColor: 'rgba(255, 255, 0, 0.2)',
+            backgroundColor: 'rgba(0, 255, 0, 0.2)',
             font: { size: 12, weight: 'bold' }
         },
         {
@@ -1012,7 +1020,7 @@ function renderBenchmarkComparison() {
                 <tr>
                     <th>Variável</th>
                     <th>Média do Grupo</th>
-                    <th>Média Top 175</th>
+                    <th>Média do Bench</th>
                     <th>Diferença</th>
                     <th>Ranking</th>
                 </tr>
@@ -1117,7 +1125,7 @@ function generateBenchmarkChart() {
                     borderWidth: 1
                 },
                 {
-                    label: 'Média Top 175',
+                    label: 'Média do Bench',
                     data: benchmarkData,
                     backgroundColor: 'rgba(255, 99, 132, 0.7)',
                     borderColor: 'rgba(255, 99, 132, 1)',
