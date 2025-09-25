@@ -338,3 +338,54 @@ input[type="file"] {
     color: #495057;
     font-size: 16px;
 }
+
+/* Estilos para a comparação 1x1 */
+#one-to-one-comparison {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+#comparison-details table {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+#comparison-details th {
+    background-color: #e9ecef;
+    font-weight: bold;
+}
+
+/* Melhorar a visualização das variações percentuais */
+.variation-high {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.variation-medium {
+    color: #ffc107;
+    font-weight: bold;
+}
+
+.variation-low {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+/* Estilos para os seletores de comparação 1x1 */
+#respondentSelector, #benchmarkSelector {
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background-color: white;
+    min-width: 200px;
+}
+
+#benchmark-section h4 {
+    color: #495057;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #6c757d;
+    padding-bottom: 8px;
+}

@@ -11,6 +11,8 @@ let visibleRespondents = []; // Array para controlar quais respondentes estão v
 let benchmarkData = null;
 let benchmarkAverages = {};
 let benchmarkRanks = {};
+let selectedBenchmarkRow = null;
+let benchmarkRows = [];
 
 // Dados de importância das variáveis
 const importanceWeights = {
@@ -150,6 +152,7 @@ function processFiles() {
                     if (benchmarkData) {
                         renderBenchmarkComparison();
                         generateBenchmarkChart();
+                        renderBenchmarkRowSelector(); // Atualizar seletor de benchmark
                     }
                 }
             } catch (error) {
@@ -219,6 +222,7 @@ function toggleVariable(variable) {
     if (benchmarkData) {
         renderBenchmarkComparison();
         generateBenchmarkChart();
+        updateOneToOneComparison(); // Atualizar comparação 1x1 se estiver ativa
     }
 }
 
@@ -234,6 +238,8 @@ function toggleRespondent(index) {
     if (benchmarkData) {
         renderBenchmarkComparison();
         generateBenchmarkChart();
+        renderBenchmarkRowSelector(); // Atualizar seletor de benchmark
+        updateOneToOneComparison(); // Atualizar comparação 1x1 se estiver ativa
     }
 }
 
@@ -243,6 +249,7 @@ function selectFile(select) {
     renderComparisonTable();
     generateFFTChart();
     generateImportanceChart();
+    updateOneToOneComparison(); // Atualizar comparação 1x1 se estiver ativa
 }
 
 function renderComparisonTable() {
@@ -936,11 +943,13 @@ function processBenchmarkFile(event) {
             
             if (jsonData.length > 0) {
                 benchmarkData = jsonData;
+                benchmarkRows = jsonData; // Armazenar todas as linhas
                 calculateBenchmarkAverages();
                 calculateBenchmarkRanks();
                 document.getElementById('benchmark-section').style.display = 'block';
                 renderBenchmarkComparison();
                 generateBenchmarkChart();
+                renderBenchmarkRowSelector(); // Nova função para selecionar linha do bench
             }
         } catch (error) {
             console.error("Erro ao processar arquivo de benchmark:", error);
@@ -1001,7 +1010,326 @@ function calculateRank(variable, value) {
     return (countBelow / values.length) * 100;
 }
 
-// Renderizar comparação com benchmark
+// Nova função para renderizar seletor de linha do benchmark
+function renderBenchmarkRowSelector() {
+    const benchmarkSection = document.getElementById('benchmark-section');
+    
+    // Adicionar seletor de linha do benchmark
+    let selectorHTML = `
+        <div style="margin-bottom: 20px;">
+            <h4>Comparação Individual 1x1</h4>
+            <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                <div>
+                    <label>Selecionar Respondente:</label>
+                    <select id="respondentSelector" onchange="updateOneToOneComparison()">
+                        <option value="">Nenhum</option>
+    `;
+    
+    fileNames.forEach((name, index) => {
+        if (visibleRespondents[index]) {
+            selectorHTML += `<option value="${index}">${name}</option>`;
+        }
+    });
+    
+    selectorHTML += `
+                    </select>
+                </div>
+                <div>
+                    <label>Selecionar Bench:</label>
+                    <select id="benchmarkSelector" onchange="updateOneToOneComparison()">
+                        <option value="">Nenhum</option>
+                        <option value="average">Média do Bench (Todos)</option>
+    `;
+    
+    // Adicionar opções para cada linha do benchmark
+    benchmarkRows.forEach((row, index) => {
+        const identifier = row.Name || row.codigo_pesquisa || row.externalId || `Linha ${index + 1}`;
+        selectorHTML += `<option value="${index}">${identifier}</option>`;
+    });
+    
+    selectorHTML += `
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div id="one-to-one-comparison" style="display: none;">
+            <h4>Comparação Detalhada 1x1</h4>
+            <div id="comparison-details"></div>
+            <div class="chart-container">
+                <canvas id="oneToOneChart"></canvas>
+            </div>
+        </div>
+    `;
+    
+    // Inserir após o título da seção de benchmark
+    const existingContent = benchmarkSection.innerHTML;
+    benchmarkSection.innerHTML = selectorHTML + existingContent;
+}
+
+// Nova função para atualizar comparação 1x1
+function updateOneToOneComparison() {
+    const respondentIndex = document.getElementById('respondentSelector').value;
+    const benchmarkIndex = document.getElementById('benchmarkSelector').value;
+    const comparisonSection = document.getElementById('one-to-one-comparison');
+    
+    if (respondentIndex === '' || benchmarkIndex === '') {
+        comparisonSection.style.display = 'none';
+        return;
+    }
+    
+    comparisonSection.style.display = 'block';
+    renderOneToOneComparison(parseInt(respondentIndex), benchmarkIndex);
+    generateOneToOneChart(parseInt(respondentIndex), benchmarkIndex);
+}
+
+// Nova função para renderizar comparação detalhada 1x1
+function renderOneToOneComparison(respondentIndex, benchmarkIndex) {
+    const container = document.getElementById('comparison-details');
+    
+    if (respondentIndex === null || benchmarkIndex === null) {
+        container.innerHTML = '<p>Selecione um respondente e um benchmark para comparar.</p>';
+        return;
+    }
+    
+    const respondentData = allData[respondentIndex][0];
+    const respondentName = fileNames[respondentIndex];
+    
+    let benchmarkName, benchmarkData;
+    
+    if (benchmarkIndex === 'average') {
+        benchmarkName = 'Média do Bench';
+        benchmarkData = benchmarkAverages;
+    } else {
+        const benchRow = benchmarkRows[parseInt(benchmarkIndex)];
+        benchmarkName = benchRow.Name || benchRow.codigo_pesquisa || benchRow.externalId || `Bench ${parseInt(benchmarkIndex) + 1}`;
+        benchmarkData = benchRow;
+    }
+    
+    let tableHTML = `
+        <table>
+            <thead>
+                <tr>
+                    <th>Variável</th>
+                    <th>${respondentName}</th>
+                    <th>${benchmarkName}</th>
+                    <th>Diferença</th>
+                    <th>Variação %</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    selectedVariables.forEach(variable => {
+        if (respondentData[variable] !== undefined && benchmarkData[variable] !== undefined) {
+            const respondentValue = respondentData[variable];
+            const benchmarkValue = benchmarkData[variable];
+            const difference = respondentValue - benchmarkValue;
+            const variation = benchmarkValue !== 0 ? (difference / benchmarkValue) * 100 : 0;
+            
+            let diffClass = '';
+            if (difference > 0) diffClass = 'above-average';
+            else if (difference < 0) diffClass = 'below-average';
+            
+            let variationClass = '';
+            if (variation > 10) variationClass = 'above-average';
+            else if (variation < -10) variationClass = 'below-average';
+            
+            tableHTML += `
+                <tr>
+                    <td>${variable}</td>
+                    <td>${respondentValue.toFixed(2)}</td>
+                    <td>${benchmarkValue.toFixed(2)}</td>
+                    <td class="${diffClass}">${difference > 0 ? '+' : ''}${difference.toFixed(2)}</td>
+                    <td class="${variationClass}">${variation > 0 ? '+' : ''}${variation.toFixed(1)}%</td>
+                </tr>
+            `;
+        }
+    });
+    
+    tableHTML += `</tbody></table>`;
+    container.innerHTML = tableHTML;
+}
+
+// Calcular médias do grupo atual
+function calculateGroupAverages() {
+    const averages = {};
+    
+    allData.forEach((data, idx) => {
+        if (!visibleRespondents[idx]) return;
+        
+        data.forEach(item => {
+            for (const key in item) {
+                if (typeof item[key] === 'number') {
+                    if (!averages[key]) averages[key] = { sum: 0, count: 0 };
+                    averages[key].sum += item[key];
+                    averages[key].count += 1;
+                }
+            }
+        });
+    });
+    
+    // Calcular médias finais
+    const result = {};
+    Object.keys(averages).forEach(key => {
+        result[key] = averages[key].sum / averages[key].count;
+    });
+    
+    return result;
+}
+
+// Gerar gráfico de comparação com benchmark (CORRIGIDA)
+function generateBenchmarkChart() {
+    const ctx = document.getElementById('benchmarkChart').getContext('2d');
+    if (window.benchmarkChartInstance) window.benchmarkChartInstance.destroy();
+    
+    const groupAverages = calculateGroupAverages();
+    
+    // Verificar se há dados para exibir
+    const labels = selectedVariables.filter(v => 
+        benchmarkAverages[v] !== undefined && groupAverages[v] !== undefined
+    );
+    
+    // Se não há dados válidos, ocultar o container do gráfico
+    const chartContainer = document.querySelector('#benchmarkChart').closest('.chart-container');
+    if (labels.length === 0) {
+        chartContainer.style.display = 'none';
+        return;
+    }
+    
+    // Mostrar o container do gráfico
+    chartContainer.style.display = 'block';
+    
+    const groupData = labels.map(v => groupAverages[v]);
+    const benchmarkData = labels.map(v => benchmarkAverages[v]);
+    
+    window.benchmarkChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Média do Grupo',
+                    data: groupData,
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Média do Bench',
+                    data: benchmarkData,
+                    backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ' + context.raw.toFixed(2);
+                        }
+                    }
+                }
+            },
+            scales: { 
+                y: { 
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Valor'
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Nova função para gerar gráfico 1x1
+function generateOneToOneChart(respondentIndex, benchmarkIndex) {
+    const ctx = document.getElementById('oneToOneChart').getContext('2d');
+    if (window.oneToOneChartInstance) window.oneToOneChartInstance.destroy();
+    
+    const respondentData = allData[respondentIndex][0];
+    const respondentName = fileNames[respondentIndex];
+    
+    let benchmarkName, benchmarkData;
+    
+    if (benchmarkIndex === 'average') {
+        benchmarkName = 'Média do Bench';
+        benchmarkData = benchmarkAverages;
+    } else {
+        const benchRow = benchmarkRows[parseInt(benchmarkIndex)];
+        benchmarkName = benchRow.Name || benchRow.codigo_pesquisa || benchRow.externalId || `Bench ${parseInt(benchmarkIndex) + 1}`;
+        benchmarkData = benchRow;
+    }
+    
+    const labels = selectedVariables.filter(v => 
+        respondentData[v] !== undefined && benchmarkData[v] !== undefined
+    );
+    
+    const respondentValues = labels.map(v => respondentData[v]);
+    const benchmarkValues = labels.map(v => benchmarkData[v]);
+    
+    window.oneToOneChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: respondentName,
+                    data: respondentValues,
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: benchmarkName,
+                    data: benchmarkValues,
+                    backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ' + context.raw.toFixed(2);
+                        }
+                    }
+                },
+                title: {
+                    display: true,
+                    text: `Comparação 1x1: ${respondentName} vs ${benchmarkName}`,
+                    font: {
+                        size: 16
+                    }
+                }
+            },
+            scales: { 
+                y: { 
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Valor'
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Modificar a função renderBenchmarkComparison para incluir ambas as visualizações
 function renderBenchmarkComparison() {
     const container = document.getElementById('benchmark-results');
     
@@ -1013,8 +1341,9 @@ function renderBenchmarkComparison() {
     // Calcular médias do grupo atual
     const groupAverages = calculateGroupAverages();
     
-    // Criar tabela comparativa
+    // Criar tabela comparativa (comparação de grupo vs bench)
     let tableHTML = `
+        <h4>Comparação Grupo vs Bench (Todos)</h4>
         <table>
             <thead>
                 <tr>
@@ -1068,95 +1397,6 @@ function renderBenchmarkComparison() {
     
     tableHTML += `</tbody></table>`;
     container.innerHTML = tableHTML;
-}
-
-// Calcular médias do grupo atual
-function calculateGroupAverages() {
-    const averages = {};
-    
-    allData.forEach((data, idx) => {
-        if (!visibleRespondents[idx]) return;
-        
-        data.forEach(item => {
-            for (const key in item) {
-                if (typeof item[key] === 'number') {
-                    if (!averages[key]) averages[key] = { sum: 0, count: 0 };
-                    averages[key].sum += item[key];
-                    averages[key].count += 1;
-                }
-            }
-        });
-    });
-    
-    // Calcular médias finais
-    const result = {};
-    Object.keys(averages).forEach(key => {
-        result[key] = averages[key].sum / averages[key].count;
-    });
-    
-    return result;
-}
-
-// Gerar gráfico de comparação com benchmark
-function generateBenchmarkChart() {
-    const ctx = document.getElementById('benchmarkChart').getContext('2d');
-    if (window.benchmarkChartInstance) window.benchmarkChartInstance.destroy();
-    
-    const groupAverages = calculateGroupAverages();
-    
-    // Preparar dados para o gráfico
-    const labels = selectedVariables.filter(v => 
-        benchmarkAverages[v] !== undefined && groupAverages[v] !== undefined
-    );
-    
-    const groupData = labels.map(v => groupAverages[v]);
-    const benchmarkData = labels.map(v => benchmarkAverages[v]);
-    
-    window.benchmarkChartInstance = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [
-                {
-                    label: 'Média do Grupo',
-                    data: groupData,
-                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 1
-                },
-                {
-                    label: 'Média do Bench',
-                    data: benchmarkData,
-                    backgroundColor: 'rgba(255, 99, 132, 0.7)',
-                    borderColor: 'rgba(255, 99, 132, 1)',
-                    borderWidth: 1
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'top' },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return context.dataset.label + ': ' + context.raw.toFixed(2);
-                        }
-                    }
-                }
-            },
-            scales: { 
-                y: { 
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Valor'
-                    }
-                }
-            }
-        }
-    });
 }
 
 // ======= UTIL =======
