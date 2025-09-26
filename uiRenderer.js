@@ -215,6 +215,10 @@ class UIRenderer {
                 <div class="chart-container">
                     <canvas id="oneToOneChart"></canvas>
                 </div>
+                <!-- NOVO: Gráfico de Importância vs. Desempenho 1x1 -->
+                <div class="chart-container">
+                    <canvas id="oneToOneImportanceChart"></canvas>
+                </div>
             </div>
         `;
         
@@ -289,5 +293,8 @@ class UIRenderer {
         
         tableHTML += `</tbody></table>`;
         container.innerHTML = tableHTML;
+        
+        // NOVO: Gerar o gráfico de importância 1x1
+        ChartGenerators.generateOneToOneImportanceChart(respondentIndex, benchmarkIndex);
     }
 }

@@ -345,6 +345,104 @@ class ChartGenerators {
         console.log('Gráfico 1x1 gerado com sucesso');
     }
     
+    static generateOneToOneImportanceChart(respondentIndex, benchmarkIndex) {
+        console.log('generateOneToOneImportanceChart chamado com:', { respondentIndex, benchmarkIndex });
+        
+        const canvas = document.getElementById('oneToOneImportanceChart');
+        if (!canvas) {
+            console.error('Canvas oneToOneImportanceChart não encontrado!');
+            return;
+        }
+        
+        const ctx = canvas.getContext('2d');
+        chartRegistry.destroy('oneToOneImportanceChart');
+        
+        // Obter dados do respondente
+        const respondentData = allData[respondentIndex][0];
+        const respondentName = fileNames[respondentIndex];
+        
+        // Obter dados do benchmark
+        let benchmarkName, benchmarkData;
+        if (benchmarkIndex === 'average') {
+            benchmarkName = 'Média do Bench';
+            benchmarkData = benchmarkAverages;
+        } else {
+            const benchRow = benchmarkRows[parseInt(benchmarkIndex)];
+            benchmarkName = benchRow.Name || benchRow.codigo_pesquisa || benchRow.externalId || `Bench ${parseInt(benchmarkIndex) + 1}`;
+            benchmarkData = benchRow;
+        }
+        
+        // Criar pesos baseados no benchmark
+        const benchmarkWeights = {};
+        Object.keys(benchmarkData).forEach(key => {
+            if (typeof benchmarkData[key] === 'number' && benchmarkData[key] >= 0 && benchmarkData[key] <= 100) {
+                benchmarkWeights[key] = benchmarkData[key];
+            }
+        });
+        
+        // Filtrar variáveis disponíveis em ambos
+        const availableMetrics = Object.keys(benchmarkWeights).filter(variable => 
+            respondentData[variable] !== undefined && typeof respondentData[variable] === 'number'
+        );
+        
+        if (availableMetrics.length === 0) {
+            const instance = new Chart(ctx, {
+                type: 'scatter',
+                data: { datasets: [] },
+                options: this.getEmptyImportanceChartOptions()
+            });
+            chartRegistry.register('oneToOneImportanceChart', instance);
+            return;
+        }
+        
+        // Dataset para o Benchmark (linha diagonal)
+        const benchmarkPoints = availableMetrics.map(variable => ({
+            x: benchmarkWeights[variable],
+            y: benchmarkWeights[variable], // y = x para formar a diagonal
+            variable: variable
+        }));
+        
+        const benchmarkDataset = {
+            label: `${benchmarkName} (Benchmark)`,
+            data: benchmarkPoints,
+            backgroundColor: 'rgba(255, 99, 132, 0.7)',
+            borderColor: 'rgba(255, 99, 132, 1)',
+            pointRadius: 6,
+            pointHoverRadius: 8,
+            showLine: true,
+            lineTension: 0,
+            fill: false
+        };
+        
+        // Dataset para o Respondente
+        const respondentPoints = availableMetrics.map(variable => ({
+            x: benchmarkWeights[variable], // Peso = valor no benchmark
+            y: respondentData[variable],   // Nota = valor do respondente
+            variable: variable
+        }));
+        
+        const respondentDataset = {
+            label: `${respondentName} (Respondente)`,
+            data: respondentPoints,
+            backgroundColor: 'rgba(54, 162, 235, 0.7)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            pointRadius: 8,
+            pointHoverRadius: 10,
+            showLine: false
+        };
+        
+        const instance = new Chart(ctx, {
+            type: 'scatter',
+            data: { 
+                datasets: [benchmarkDataset, respondentDataset] 
+            },
+            options: this.getOneToOneImportanceChartOptions(respondentName, benchmarkName)
+        });
+        
+        chartRegistry.register('oneToOneImportanceChart', instance);
+        console.log('Gráfico de Importância 1x1 gerado com sucesso');
+    }
+    
     // Métodos auxiliares para opções dos gráficos
     static getBarChartOptions() {
         return {
@@ -545,6 +643,145 @@ class ChartGenerators {
                     min: 0,
                     max: 100,
                     title: { display: true, text: 'Desempenho (Nota)' },
+                    grid: {
+                        color: function(context) {
+                            return context.tick.value === 50 ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.1)';
+                        }
+                    }
+                }
+            }
+        };
+    }
+    
+    static getOneToOneImportanceChartOptions(respondentName, benchmarkName) {
+        const verticalLine = {
+            type: 'line',
+            xMin: 50,
+            xMax: 50,
+            yMin: 0,
+            yMax: 100,
+            borderColor: 'rgba(0, 0, 0, 0.7)',
+            borderWidth: 2
+        };
+
+        const horizontalLine = {
+            type: 'line',
+            xMin: 0,
+            xMax: 100,
+            yMin: 50,
+            yMax: 50,
+            borderColor: 'rgba(0, 0, 0, 0.7)',
+            borderWidth: 2
+        };
+
+        const quadrantAnnotations = [
+            {
+                type: 'label',
+                xValue: 25,
+                yValue: 75,
+                content: 'Q1: Força no Passado',
+                backgroundColor: 'rgba(255, 255, 0, 0.2)',
+                font: { size: 12, weight: 'bold' }
+            },
+            {
+                type: 'label',
+                xValue: 75,
+                yValue: 75,
+                content: 'Q2: Time Preparado para o Futuro',
+                backgroundColor: 'rgba(0, 255, 0, 0.2)',
+                font: { size: 12, weight: 'bold' }
+            },
+            {
+                type: 'label',
+                xValue: 25,
+                yValue: 25,
+                content: 'Q3: Baixa Prioridade',
+                backgroundColor: 'rgba(255, 165, 0, 0.2)',
+                font: { size: 12, weight: 'bold' }
+            },
+            {
+                type: 'label',
+                xValue: 75,
+                yValue: 25,
+                content: 'Q4: Alerta de Desenvolvimento',
+                backgroundColor: 'rgba(255, 0, 0, 0.2)',
+                font: { size: 12, weight: 'bold' }
+            }
+        ];
+
+        return {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        generateLabels: function(chart) {
+                            return chart.data.datasets.map((dataset) => {
+                                return {
+                                    text: dataset.label,
+                                    fillStyle: dataset.backgroundColor,
+                                    strokeStyle: dataset.borderColor,
+                                    lineWidth: 1,
+                                    pointStyle: dataset.showLine ? 'line' : 'circle',
+                                    hidden: false
+                                };
+                            });
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const point = context.raw;
+                            if (context.dataset.label.includes('Benchmark')) {
+                                return `${point.variable} (Peso: ${point.x.toFixed(2)}, Nota: ${point.y.toFixed(2)}) - Benchmark`;
+                            } else {
+                                return `${point.variable} (Peso: ${point.x.toFixed(2)}, Nota: ${point.y.toFixed(2)}) - Respondente`;
+                            }
+                        }
+                    }
+                },
+                annotation: {
+                    annotations: {
+                        verticalLine,
+                        horizontalLine,
+                        ...quadrantAnnotations.reduce((acc, annotation, index) => {
+                            acc[`quadrant${index + 1}`] = annotation;
+                            return acc;
+                        }, {})
+                    }
+                },
+                title: {
+                    display: true,
+                    text: `Importância vs. Desempenho: ${respondentName} vs ${benchmarkName}`,
+                    font: { size: 16 }
+                }
+            },
+            scales: {
+                x: {
+                    type: 'linear',
+                    position: 'bottom',
+                    min: 0,
+                    max: 100,
+                    title: { 
+                        display: true, 
+                        text: 'Importância (Valor no Benchmark)' 
+                    },
+                    grid: {
+                        color: function(context) {
+                            return context.tick.value === 50 ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.1)';
+                        }
+                    }
+                },
+                y: {
+                    min: 0,
+                    max: 100,
+                    title: { 
+                        display: true, 
+                        text: 'Desempenho (Nota do Respondente)' 
+                    },
                     grid: {
                         color: function(context) {
                             return context.tick.value === 50 ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.1)';

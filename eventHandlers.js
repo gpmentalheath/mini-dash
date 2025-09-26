@@ -118,10 +118,13 @@ class EventHandlers {
             return;
         }
 
-        console.log('Renderizando comparação 1x1');
+        console.log('Renderizando comparação 1x1 completa');
         comparisonSection.style.display = 'block';
+        
+        // Renderizar ambos os gráficos
         UIRenderer.renderOneToOneComparison(parseInt(respondentIndex), benchmarkIndex);
         ChartGenerators.generateOneToOneChart(parseInt(respondentIndex), benchmarkIndex);
+        ChartGenerators.generateOneToOneImportanceChart(parseInt(respondentIndex), benchmarkIndex);
     }
 }
 
@@ -169,6 +172,15 @@ function selectFile(select) {
     ChartGenerators.generateFFTChart();
     ChartGenerators.generateImportanceChart();
     EventHandlers.updateOneToOneComparison();
+}
+
+function selectBenchmarkRow(select) {
+    selectedBenchmarkRow = select.value;
+    if (benchmarkData) {
+        UIRenderer.renderBenchmarkComparison();
+        ChartGenerators.generateBenchmarkChart();
+        EventHandlers.updateOneToOneComparison();
+    }
 }
 
 // Esta função precisa estar disponível globalmente para ser chamada pelo HTML

@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="styles.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="config.js"></script>
     <script src="chartRegistry.js"></script>
     <script src="utils.js"></script>
@@ -79,19 +80,66 @@
             <canvas id="fftChart"></canvas>
           </div>
 
-          <!-- Novo gráfico de importância -->
+          <!-- Gráfico de importância -->
           <div class="chart-container">
             <canvas id="importanceChart"></canvas>
           </div>
 
-          <!-- Nova área de benchmarking (inicialmente oculta) -->
+          <!-- Área de benchmarking (inicialmente oculta) -->
           <div id="benchmark-section" style="display: none">
             <h3>Comparativo com o Bench</h3>
+            
+            <!-- Seletor de linha específica do benchmark -->
+            <div id="benchmark-row-selector-container" style="margin-bottom: 20px;">
+              <h4>Selecionar Linha Específica do Benchmark</h4>
+              <select id="benchmarkRowSelector" onchange="selectBenchmarkRow(this)">
+                <option value="average">Média do Benchmark</option>
+                <!-- Opções serão preenchidas via JavaScript -->
+              </select>
+            </div>
+            
             <div id="benchmark-results"></div>
             <div class="chart-container">
               <canvas id="benchmarkChart"></canvas>
             </div>
+            
+            <!-- Comparação 1x1 -->
+            <div id="one-to-one-comparison" style="display: none; margin-top: 30px; padding: 20px; background-color: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6;">
+              <h3>Comparação 1x1 Detalhada</h3>
+              
+              <!-- Seletores de comparação -->
+              <div style="margin-bottom: 20px;">
+                <label for="respondentSelector" style="font-weight: bold;">Selecionar Respondente:</label>
+                <select id="respondentSelector" onchange="updateOneToOneComparison()" style="margin-left: 10px; padding: 5px;">
+                  <option value="">Selecione um respondente</option>
+                  <!-- Opções serão preenchidas via JavaScript -->
+                </select>
+                
+                <label for="benchmarkSelector" style="margin-left: 30px; font-weight: bold;">Comparar com:</label>
+                <select id="benchmarkSelector" onchange="updateOneToOneComparison()" style="margin-left: 10px; padding: 5px;">
+                  <option value="">Selecione benchmark</option>
+                  <option value="average">Média do Benchmark</option>
+                  <!-- Opções serão preenchidas via JavaScript -->
+                </select>
+              </div>
+              
+              <!-- Gráfico de barras 1x1 -->
+              <div class="chart-container">
+                <canvas id="oneToOneChart"></canvas>
+              </div>
+              
+              <!-- Novo: Gráfico de Importância vs. Desempenho 1x1 -->
+              <div id="one-to-one-importance-container" class="chart-container" style="display: none;">
+                <h4>Análise de Importância vs. Desempenho 1x1</h4>
+                <canvas id="oneToOneImportanceChart"></canvas>
+              </div>
+              
+              <!-- Tabela de comparação -->
+              <div id="comparison-details"></div>
+            </div>
           </div>
+          
+          <!-- Loader do benchmark -->
           <div id="benchmark-loader" style="display: none; margin-top: 10px">
             <div style="display: flex; align-items: center; gap: 10px">
               <div
@@ -107,23 +155,46 @@
               <span>Processando planilha de benchmark...</span>
             </div>
           </div>
-
-          <style>
-            @keyframes spin {
-              0% {
-                transform: rotate(0deg);
-              }
-              100% {
-                transform: rotate(360deg);
-              }
-            }
-          </style>
         </div>
       </div>
     </div>
 
-    <!-- Adicione estas bibliotecas para processamento de Excel -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="script.js"></script>
+    <style>
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      
+      /* Estilos adicionais para os seletores */
+      #respondentSelector, #benchmarkSelector, #benchmarkRowSelector {
+        padding: 8px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        background-color: white;
+        min-width: 200px;
+        font-size: 14px;
+      }
+      
+      label {
+        font-weight: bold;
+        color: #495057;
+      }
+      
+      #one-to-one-comparison h3 {
+        color: #495057;
+        border-bottom: 2px solid #6c757d;
+        padding-bottom: 10px;
+        margin-top: 0;
+      }
+      
+      #one-to-one-comparison h4 {
+        color: #6c757d;
+        margin-bottom: 15px;
+      }
+    </style>
   </body>
 </html>
