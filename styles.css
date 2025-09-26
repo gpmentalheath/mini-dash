@@ -21,32 +21,111 @@ body {
 
 /* Espaço reservado para o cabeçalho fixo */
 .header-spacer {
-    height: 190px; /* Ajuste conforme necessário */
+    height: 160px; /* Reduzido de 190px/220px para 160px */
 }
 
 /* Container principal com scroll */
 #main-container {
-    height: calc(100vh - 220px);
+    height: calc(100vh - 100px); /* Ajustado para 180px (160px + 20px de padding) */
     overflow-y: auto;
     padding: 0 20px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
-#container {
+/* Container das seções */
+.section-container {
+    margin-bottom: 30px;
+    padding: 20px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.section-container h3 {
+    color: #333;
+    border-bottom: 2px solid #4CAF50;
+    padding-bottom: 10px;
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+/* Layout de colunas para a seção superior */
+.columns-container {
     display: flex;
     gap: 20px;
     min-height: 100%;
 }
 
-#left-column, #right-column {
+.left-column, .right-column {
     flex: 1;
-    border: 1px solid #ddd;
-    padding: 15px;
     box-sizing: border-box;
+}
+
+/* Layout específico para a seção de benchmark */
+.benchmark-top-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.benchmark-column {
+    flex: 1;
+    box-sizing: border-box;
+}
+
+.benchmark-full-width {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.benchmark-subsection {
+    margin-bottom: 20px;
+}
+
+.benchmark-subsection h4 {
+    color: #444;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 8px;
+}
+
+.comparison-selectors {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.selector-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.selector-group label {
+    font-weight: bold;
+    font-size: 14px;
+    color: #495057;
+}
+
+#respondentSelector, #benchmarkSelector {
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
     background-color: white;
+    min-width: 200px;
+    font-size: 14px;
+}
+
+#no-comparison-message {
+    background-color: #f8f9fa;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    overflow-y: auto;
-    height: 100%;
+    border: 1px solid #dee2e6;
+    text-align: center;
+    padding: 40px;
+    color: #666;
 }
 
 table {
@@ -79,6 +158,13 @@ h2 {
 h3 {
     color: #444;
     margin-top: 0;
+}
+
+h4 {
+    color: #444;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 8px;
 }
 
 /* Checkbox compacto */
@@ -163,12 +249,26 @@ input[type="file"] {
     background-color: #45a049;
 }
 
-/* Estilo para os gráficos */
+/* Estilo para os gráficos - ALTURAS ESPECÍFICAS */
 .chart-container {
     position: relative;
-    margin: 20px 0;
-    height: 450px;
+    margin: 15px 0;
     width: 100%;
+}
+
+/* Gráficos principais (seção superior) */
+#top-section .chart-container {
+    height: 450px;
+}
+
+/* Gráficos do benchmark (primeira linha - duas colunas) */
+#benchmark-section .benchmark-top-row .chart-container {
+    height: 400px;
+}
+
+/* Gráfico de Importância vs. Desempenho do Benchmark (altura aumentada) */
+#benchmark-section .benchmark-full-width .chart-container {
+    height: 600px; /* Altura aumentada */
 }
 
 /* Legenda personalizada */
@@ -234,7 +334,7 @@ input[type="file"] {
 
 /* Estilos para a seção de benchmark */
 #benchmark-section {
-    margin-top: 30px;
+    margin-top: 0;
     padding: 20px;
     background-color: #f9f9f9;
     border-radius: 8px;
@@ -374,18 +474,7 @@ input[type="file"] {
     font-weight: bold;
 }
 
-/* Estilos para os seletores de comparação 1x1 */
-#respondentSelector, #benchmarkSelector {
-    padding: 8px 12px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    background-color: white;
-    min-width: 200px;
-}
-
-#benchmark-section h4 {
-    color: #495057;
-    margin-bottom: 15px;
-    border-bottom: 2px solid #6c757d;
-    padding-bottom: 8px;
+/* Ajuste no header spacer para acomodar o novo layout */
+.header-spacer {
+    height: 120px;
 }

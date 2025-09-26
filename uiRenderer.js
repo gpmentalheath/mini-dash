@@ -105,7 +105,6 @@ class UIRenderer {
         const groupAverages = DataCalculator.calculateGroupAverages();
         
         let tableHTML = `
-            <h4>Comparação Grupo vs Bench (Todos)</h4>
             <table>
                 <thead>
                     <tr>
@@ -161,74 +160,30 @@ class UIRenderer {
         const benchmarkSection = document.getElementById('benchmark-section');
         if (!benchmarkSection) return;
         
-        // Remover seletor anterior se existir
-        const existingSelector = benchmarkSection.querySelector('div:first-child');
-        if (existingSelector && existingSelector.querySelector('#respondentSelector')) {
-            existingSelector.remove();
+        // Preencher o seletor de respondentes
+        const respondentSelector = document.getElementById('respondentSelector');
+        if (respondentSelector) {
+            let options = '<option value="">Selecione um respondente</option>';
+            fileNames.forEach((name, index) => {
+                if (visibleRespondents[index]) {
+                    options += `<option value="${index}">${name}</option>`;
+                }
+            });
+            respondentSelector.innerHTML = options;
         }
         
-        // Remover também a seção one-to-one-comparison se existir
-        const existingComparison = document.getElementById('one-to-one-comparison');
-        if (existingComparison) {
-            existingComparison.remove();
-        }
-        
-        let selectorHTML = `
-            <div style="margin-bottom: 20px;">
-                <h4>Comparação Individual 1x1</h4>
-                <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
-                    <div>
-                        <label>Selecionar Respondente:</label>
-                        <select id="respondentSelector" onchange="updateOneToOneComparison()">
-                            <option value="">Nenhum</option>
-        `;
-        
-        fileNames.forEach((name, index) => {
-            if (visibleRespondents[index]) {
-                selectorHTML += `<option value="${index}">${name}</option>`;
-            }
-        });
-        
-        selectorHTML += `
-                        </select>
-                    </div>
-                    <div>
-                        <label>Selecionar Bench:</label>
-                        <select id="benchmarkSelector" onchange="updateOneToOneComparison()">
-                            <option value="">Nenhum</option>
-                            <option value="average">Média do Bench (Todos)</option>
-        `;
-        
-        benchmarkRows.forEach((row, index) => {
-            const identifier = row.Name || row.codigo_pesquisa || row.externalId || `Linha ${index + 1}`;
-            selectorHTML += `<option value="${index}">${identifier}</option>`;
-        });
-        
-        selectorHTML += `
-                        </select>
-                    </div>
-                </div>
-            </div>
-            <div id="one-to-one-comparison" style="display: none;">
-                <h4>Comparação Detalhada 1x1</h4>
-                <div id="comparison-details"></div>
-                <div class="chart-container">
-                    <canvas id="oneToOneChart"></canvas>
-                </div>
-                <!-- NOVO: Gráfico de Importância vs. Desempenho 1x1 -->
-                <div class="chart-container">
-                    <canvas id="oneToOneImportanceChart"></canvas>
-                </div>
-            </div>
-        `;
-        
-        // CORREÇÃO: Usar insertAdjacentHTML em vez de createElementFromHTML
-        const title = benchmarkSection.querySelector('h3');
-        if (title) {
-            // Inserir após o título
-            title.insertAdjacentHTML('afterend', selectorHTML);
-        } else {
-            benchmarkSection.innerHTML = selectorHTML + benchmarkSection.innerHTML;
+        // Preencher o seletor de benchmark
+        const benchmarkSelector = document.getElementById('benchmarkSelector');
+        if (benchmarkSelector) {
+            let options = '<option value="">Selecione benchmark</option>';
+            options += '<option value="average">Média do Benchmark</option>';
+            
+            benchmarkRows.forEach((row, index) => {
+                const identifier = row.Name || row.codigo_pesquisa || row.externalId || `Linha ${index + 1}`;
+                options += `<option value="${index}">${identifier}</option>`;
+            });
+            
+            benchmarkSelector.innerHTML = options;
         }
     }
     
@@ -293,8 +248,5 @@ class UIRenderer {
         
         tableHTML += `</tbody></table>`;
         container.innerHTML = tableHTML;
-        
-        // NOVO: Gerar o gráfico de importância 1x1
-        ChartGenerators.generateOneToOneImportanceChart(respondentIndex, benchmarkIndex);
     }
 }

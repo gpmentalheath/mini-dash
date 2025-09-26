@@ -3,7 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Comparativo de Dados</title>
+    <title>R2D2: Relatório de Respostas e Dados Dinâmicos</title>
+    <link rel="icon" type="image/webp" href="r2d2.png">
     <link rel="stylesheet" href="styles.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.0.1/dist/chartjs-plugin-annotation.min.js"></script>
@@ -22,30 +23,34 @@
   <body>
     <!-- Cabeçalho fixo -->
     <div class="fixed-header">
-      <h2>Comparativo de Dados</h2>
-
-      <div class="info-box">
-        <strong>Instruções:</strong> Selecione arquivos JSON que contenham as
-        métricas de processamento dos respondentes.
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+          <img src="r2d2.png" alt="R2D2" style="width: 40px; height: 40px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+          <h2 style="margin: 0; font-size: 1.3rem;">R2D2: Relatório de Respostas e Dados Dinâmicos</h2>
+        </div>
+        
+        <div class="info-box" style="margin: 0; max-width: 300px; font-size: 0.9rem; padding: 8px 12px;">
+          <strong>Instruções:</strong> Selecione arquivos JSON com métricas dos respondentes.
+        </div>
       </div>
 
-      <input type="file" id="fileInput" multiple accept=".json" />
+      <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+        <input type="file" id="fileInput" multiple accept=".json" style="margin: 0;" />
+        
+        <input
+          type="file"
+          id="benchmarkFileInput"
+          accept=".xlsx,.xls"
+          style="margin: 0;"
+        />
 
-      <!-- Novo input para upload da planilha de benchmark -->
-      <input
-        type="file"
-        id="benchmarkFileInput"
-        accept=".xlsx,.xls"
-        style="margin-top: 10px"
-      />
-
-      <!-- Botões para mostrar/ocultar métricas e respondentes -->
-      <button id="metricsToggleBtn" class="toggle-btn">
-        Seleção Métricas ▼
-      </button>
-      <button id="respondentsToggleBtn" class="toggle-btn">
-        Seleção Respondentes ▼
-      </button>
+        <button id="metricsToggleBtn" class="toggle-btn" style="margin: 0;">
+          Seleção Métricas ▼
+        </button>
+        <button id="respondentsToggleBtn" class="toggle-btn" style="margin: 0;">
+          Seleção Respondentes ▼
+        </button>
+      </div>
 
       <div id="metricsContainer" style="display: none">
         <div id="checkboxes"></div>
@@ -61,140 +66,104 @@
 
     <!-- Container principal com scroll -->
     <div id="main-container">
-      <div id="container">
-        <!-- Coluna esquerda: tabela comparativa -->
-        <div id="left-column">
-          <div id="file-selector-container"></div>
-          <div id="averages"></div>
+      <!-- SEÇÃO SUPERIOR: Análise Principal -->
+      <div id="top-section" class="section-container">
+        <h3>Análise Principal</h3>
+        <div class="columns-container">
+          <!-- Coluna esquerda: tabela comparativa -->
+          <div class="left-column">
+            <div id="file-selector-container"></div>
+            <div id="averages"></div>
+          </div>
+
+          <!-- Coluna direita: gráficos principais -->
+          <div class="right-column">
+            <div class="chart-container">
+              <canvas id="barChart"></canvas>
+            </div>
+            <div class="chart-container">
+              <canvas id="radarChart"></canvas>
+            </div>
+            <div class="chart-container">
+              <canvas id="fftChart"></canvas>
+            </div>
+            <div class="chart-container">
+              <canvas id="importanceChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SEÇÃO INFERIOR: Benchmark (aparece apenas quando há dados de benchmark) -->
+      <div id="benchmark-section" class="section-container" style="display: none">
+        <h3>Análise de Benchmark</h3>
+        
+        <!-- Loader do benchmark -->
+        <div id="benchmark-loader" style="display: none; margin-bottom: 20px;">
+          <div style="display: flex; align-items: center; gap: 10px">
+            <div class="loader-spinner"></div>
+            <span>Processando planilha de benchmark...</span>
+          </div>
         </div>
 
-        <!-- Coluna direita: gráficos -->
-        <div id="right-column">
-          <div class="chart-container">
-            <canvas id="barChart"></canvas>
-          </div>
-          <div class="chart-container">
-            <canvas id="radarChart"></canvas>
-          </div>
-          <div class="chart-container">
-            <canvas id="fftChart"></canvas>
-          </div>
-
-          <!-- Gráfico de importância -->
-          <div class="chart-container">
-            <canvas id="importanceChart"></canvas>
-          </div>
-
-          <!-- Área de benchmarking (inicialmente oculta) -->
-          <div id="benchmark-section" style="display: none">
-            <h3>Comparativo com o Bench</h3>
-            
-            <!-- Seletor de linha específica do benchmark -->
-            <div id="benchmark-row-selector-container" style="margin-bottom: 20px;">
-              <h4>Selecionar Linha Específica do Benchmark</h4>
-              <select id="benchmarkRowSelector" onchange="selectBenchmarkRow(this)">
-                <option value="average">Média do Benchmark</option>
-                <!-- Opções serão preenchidas via JavaScript -->
-              </select>
-            </div>
-            
+        <!-- Primeira linha do benchmark: duas colunas -->
+        <div class="benchmark-top-row">
+          <!-- Coluna esquerda: Bench Geral -->
+          <div class="benchmark-column">
+            <h4>Benchmark: Grupo vs Bench (Geral)</h4>
             <div id="benchmark-results"></div>
             <div class="chart-container">
               <canvas id="benchmarkChart"></canvas>
             </div>
+          </div>
+
+          <!-- Coluna direita: Bench 1x1 -->
+          <div class="benchmark-column">
+            <h4>Benchmark: Comparação 1x1</h4>
             
-            <!-- Comparação 1x1 -->
-            <div id="one-to-one-comparison" style="display: none; margin-top: 30px; padding: 20px; background-color: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6;">
-              <h3>Comparação 1x1 Detalhada</h3>
-              
-              <!-- Seletores de comparação -->
-              <div style="margin-bottom: 20px;">
-                <label for="respondentSelector" style="font-weight: bold;">Selecionar Respondente:</label>
-                <select id="respondentSelector" onchange="updateOneToOneComparison()" style="margin-left: 10px; padding: 5px;">
+            <!-- Seletores de comparação -->
+            <div class="comparison-selectors">
+              <div class="selector-group">
+                <label for="respondentSelector">Selecionar Respondente:</label>
+                <select id="respondentSelector" onchange="updateOneToOneComparison()">
                   <option value="">Selecione um respondente</option>
                   <!-- Opções serão preenchidas via JavaScript -->
                 </select>
-                
-                <label for="benchmarkSelector" style="margin-left: 30px; font-weight: bold;">Comparar com:</label>
-                <select id="benchmarkSelector" onchange="updateOneToOneComparison()" style="margin-left: 10px; padding: 5px;">
+              </div>
+              
+              <div class="selector-group">
+                <label for="benchmarkSelector">Comparar com:</label>
+                <select id="benchmarkSelector" onchange="updateOneToOneComparison()">
                   <option value="">Selecione benchmark</option>
                   <option value="average">Média do Benchmark</option>
                   <!-- Opções serão preenchidas via JavaScript -->
                 </select>
               </div>
-              
-              <!-- Gráfico de barras 1x1 -->
+            </div>
+
+            <!-- Área de comparação 1x1 -->
+            <div id="one-to-one-comparison" style="display: none;">
+              <div id="comparison-details"></div>
               <div class="chart-container">
                 <canvas id="oneToOneChart"></canvas>
               </div>
-              
-              <!-- Novo: Gráfico de Importância vs. Desempenho 1x1 -->
-              <div id="one-to-one-importance-container" class="chart-container" style="display: none;">
-                <h4>Análise de Importância vs. Desempenho 1x1</h4>
-                <canvas id="oneToOneImportanceChart"></canvas>
-              </div>
-              
-              <!-- Tabela de comparação -->
-              <div id="comparison-details"></div>
+            </div>
+
+            <!-- Mensagem quando não há seleção -->
+            <div id="no-comparison-message" style="text-align: center; padding: 40px; color: #666;">
+              <p>Selecione um respondente e um benchmark para ver a comparação detalhada.</p>
             </div>
           </div>
-          
-          <!-- Loader do benchmark -->
-          <div id="benchmark-loader" style="display: none; margin-top: 10px">
-            <div style="display: flex; align-items: center; gap: 10px">
-              <div
-                style="
-                  width: 20px;
-                  height: 20px;
-                  border: 2px solid #f3f3f3;
-                  border-top: 2px solid #4caf50;
-                  border-radius: 50%;
-                  animation: spin 1s linear infinite;
-                "
-              ></div>
-              <span>Processando planilha de benchmark...</span>
-            </div>
+        </div>
+
+        <!-- Segunda linha do benchmark: gráfico de importância em largura total -->
+        <div class="benchmark-full-width">
+          <h4>Análise de Importância vs. Desempenho do Benchmark</h4>
+          <div class="chart-container">
+            <canvas id="oneToOneImportanceChart"></canvas>
           </div>
         </div>
       </div>
     </div>
-
-    <style>
-      @keyframes spin {
-        0% {
-          transform: rotate(0deg);
-        }
-        100% {
-          transform: rotate(360deg);
-        }
-      }
-      
-      /* Estilos adicionais para os seletores */
-      #respondentSelector, #benchmarkSelector, #benchmarkRowSelector {
-        padding: 8px 12px;
-        border: 1px solid #ced4da;
-        border-radius: 4px;
-        background-color: white;
-        min-width: 200px;
-        font-size: 14px;
-      }
-      
-      label {
-        font-weight: bold;
-        color: #495057;
-      }
-      
-      #one-to-one-comparison h3 {
-        color: #495057;
-        border-bottom: 2px solid #6c757d;
-        padding-bottom: 10px;
-        margin-top: 0;
-      }
-      
-      #one-to-one-comparison h4 {
-        color: #6c757d;
-        margin-bottom: 15px;
-      }
-    </style>
   </body>
 </html>

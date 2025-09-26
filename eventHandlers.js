@@ -70,8 +70,6 @@ class EventHandlers {
 
     static refreshBenchmarkRelatedUI() {
         console.log('Atualizando UI do benchmark');
-        console.log('benchmarkData:', benchmarkData);
-        console.log('benchmarkAverages:', benchmarkAverages);
         
         // Garantir que a seção está visível
         const benchmarkSection = document.getElementById('benchmark-section');
@@ -83,6 +81,8 @@ class EventHandlers {
         UIRenderer.renderBenchmarkComparison();
         ChartGenerators.generateBenchmarkChart();
         UIRenderer.renderBenchmarkRowSelector();
+        
+        // Esconder a mensagem inicial e mostrar área de comparação se houver seleção
         EventHandlers.updateOneToOneComparison();
     }
 
@@ -92,14 +92,9 @@ class EventHandlers {
         const respondentSelector = document.getElementById('respondentSelector');
         const benchmarkSelector = document.getElementById('benchmarkSelector');
         const comparisonSection = document.getElementById('one-to-one-comparison');
+        const noComparisonMessage = document.getElementById('no-comparison-message');
 
-        console.log('Selectors encontrados:', {
-            respondentSelector: !!respondentSelector,
-            benchmarkSelector: !!benchmarkSelector,
-            comparisonSection: !!comparisonSection
-        });
-
-        if (!respondentSelector || !benchmarkSelector || !comparisonSection) {
+        if (!respondentSelector || !benchmarkSelector || !comparisonSection || !noComparisonMessage) {
             console.log('Elementos não encontrados, saindo...');
             return;
         }
@@ -107,19 +102,16 @@ class EventHandlers {
         const respondentIndex = respondentSelector.value;
         const benchmarkIndex = benchmarkSelector.value;
 
-        console.log('Valores selecionados:', {
-            respondentIndex,
-            benchmarkIndex
-        });
-
         if (!respondentIndex || !benchmarkIndex || respondentIndex === '' || benchmarkIndex === '') {
-            console.log('Valores inválidos, ocultando seção');
+            console.log('Valores inválidos, ocultando seção de comparação');
             comparisonSection.style.display = 'none';
+            noComparisonMessage.style.display = 'block';
             return;
         }
 
         console.log('Renderizando comparação 1x1 completa');
         comparisonSection.style.display = 'block';
+        noComparisonMessage.style.display = 'none';
         
         // Renderizar ambos os gráficos
         UIRenderer.renderOneToOneComparison(parseInt(respondentIndex), benchmarkIndex);
