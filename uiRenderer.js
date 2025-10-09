@@ -115,7 +115,16 @@ class UIRenderer {
         const averages = DataCalculator.getVariableAverages();
         const selectedFileName = selectedFileIndex !== null ? fileNames[selectedFileIndex] : '-';
 
-        const tableRows = Object.keys(averages).map(key => {
+        // Filtrar variáveis que têm média diferente de 0
+        const filteredVariables = Object.keys(averages).filter(key => {
+            const avg = averages[key].sum / averages[key].count;
+            return avg !== 0 && !isNaN(avg);
+        });
+
+        // Ordenar as variáveis por nome para melhor organização
+        filteredVariables.sort();
+
+        const tableRows = filteredVariables.map(key => {
             const avg = (averages[key].sum / averages[key].count).toFixed(2);
             let fileValue = '-';
             let cellClass = '';
@@ -139,13 +148,22 @@ class UIRenderer {
             </tr>`;
         }).join('');
 
+        // Adicionar contador de variáveis filtradas
+        const totalVariables = Object.keys(averages).length;
+        const filteredCount = filteredVariables.length;
+        const hiddenCount = totalVariables - filteredCount;
+
+        const summaryText = hiddenCount > 0 
+            ? ` (${filteredCount} de ${totalVariables} variáveis - ${hiddenCount} ocultas por terem média 0)`
+            : ` (${totalVariables} variáveis)`;
+
         averagesContainer.innerHTML = `
-            <h3>Métricas${selectedFileIndex !== null ? ' - ' + selectedFileName : ''}</h3>
+            <h3>Métricas${selectedFileIndex !== null ? ' - ' + selectedFileName : ''}${summaryText}</h3>
             <table>
                 <thead>
                     <tr>
                         <th>Variável</th>
-                        <th>Média</th>
+                        <th>Média do Grupo</th>
                         <th>${selectedFileIndex !== null ? selectedFileName : 'Arquivo Selecionado'}</th>
                     </tr>
                 </thead>
@@ -153,6 +171,11 @@ class UIRenderer {
                     ${tableRows}
                 </tbody>
             </table>
+            ${hiddenCount > 0 ? `
+                <div class="info-box" style="margin-top: 10px; font-size: 12px;">
+                    <strong>Nota:</strong> ${hiddenCount} variáveis com média 0 foram ocultadas para melhor visualização.
+                </div>
+            ` : ''}
         `;
     }
     
@@ -312,4 +335,5 @@ class UIRenderer {
         tableHTML += `</tbody></table>`;
         container.innerHTML = tableHTML;
     }
+    // ... outros métodos permanecem iguais ...
 }
