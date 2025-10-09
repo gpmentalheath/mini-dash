@@ -39,9 +39,49 @@ class Utils {
         return (countBelow / values.length) * 100;
     }
     
-    // Validar dados do arquivo
+    // Validar dados do arquivo - mais flexível para CSV
     static validateFileData(jsonData) {
+        if (!jsonData || (Array.isArray(jsonData) && jsonData.length === 0)) {
+            return false;
+        }
+        
         const firstItem = Array.isArray(jsonData) ? jsonData[0] : jsonData;
-        return firstItem && ('cogproc' in firstItem);
+        
+        // Verificar se tem pelo menos uma variável numérica
+        const hasNumericData = Object.keys(firstItem).some(key => {
+            const value = firstItem[key];
+            return typeof value === 'number' && !isNaN(value);
+        });
+        
+        // Verificar se tem cogproc (mas não é obrigatório para CSV)
+        const hasCogproc = 'cogproc' in firstItem;
+        
+        return hasNumericData;
+    }
+    
+    // Nova função para normalizar dados de diferentes fontes
+    static normalizeData(data) {
+        if (Array.isArray(data)) {
+            return data.map(item => Utils.normalizeDataItem(item));
+        }
+        return Utils.normalizeDataItem(data);
+    }
+    
+    static normalizeDataItem(item) {
+        const normalized = {};
+        
+        for (const key in item) {
+            let value = item[key];
+            
+            // Converter para número se possível
+            if (typeof value === 'string') {
+                const numValue = parseFloat(value);
+                normalized[key] = isNaN(numValue) ? value : numValue;
+            } else {
+                normalized[key] = value;
+            }
+        }
+        
+        return normalized;
     }
 }

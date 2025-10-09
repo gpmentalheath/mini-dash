@@ -15,6 +15,69 @@ class UIRenderer {
             </label>
         `).join('');
     }
+
+
+    static renderLearningTopics() {
+        const section = document.getElementById('learning-topics-section');
+        const content = document.getElementById('learning-topics-content');
+        
+        if (!section || !content) return;
+        
+        if (selectedFileIndex === null || !visibleRespondents[selectedFileIndex]) {
+            section.style.display = 'none';
+            return;
+        }
+        
+        const selectedData = allData[selectedFileIndex][0];
+        const selectedName = fileNames[selectedFileIndex];
+        
+        // Verificar se existem learning topics
+        const learningTopics = selectedData.learning_topics;
+        
+        if (!learningTopics || learningTopics.trim() === '') {
+            content.innerHTML = `
+                <div class="info-box">
+                    <strong>${selectedName}</strong> não possui tópicos de aprendizado definidos.
+                </div>
+            `;
+            section.style.display = 'block';
+            return;
+        }
+        
+        // Processar os learning topics
+        const topicsArray = UIRenderer.parseLearningTopics(learningTopics);
+        
+        let topicsHTML = `
+            <div class="learning-topics-header">
+                <h4>Tópicos de Aprendizado - ${selectedName}</h4>
+                <p class="topics-count">${topicsArray.length} tópico(s) encontrado(s)</p>
+            </div>
+            <div class="topics-container">
+        `;
+        
+        topicsArray.forEach((topic, index) => {
+            topicsHTML += `
+                <div class="topic-item">
+                    <div class="topic-number">${index + 1}</div>
+                    <div class="topic-content">${topic.trim()}</div>
+                </div>
+            `;
+        });
+        
+        topicsHTML += `</div>`;
+        
+        content.innerHTML = topicsHTML;
+        section.style.display = 'block';
+    }
+    
+    static parseLearningTopics(learningTopics) {
+        if (!learningTopics) return [];
+        
+        // Separar por | e filtrar itens vazios
+        return learningTopics.split('|')
+            .map(topic => topic.trim())
+            .filter(topic => topic !== '');
+    }
     
     static renderRespondentCheckboxes() {
         if (allData.length === 0) return;

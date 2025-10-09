@@ -56,6 +56,7 @@ class EventHandlers {
         UIRenderer.renderRespondentCheckboxes();
         UIRenderer.renderFileSelector();
         UIRenderer.renderComparisonTable();
+        UIRenderer.renderLearningTopics(); // NOVA LINHA
 
         ChartGenerators.generateBarChart();
         ChartGenerators.generateRadarChart();
@@ -161,6 +162,7 @@ function selectFile(select) {
     const val = select.value;
     selectedFileIndex = val === '' ? null : parseInt(val);
     UIRenderer.renderComparisonTable();
+    UIRenderer.renderLearningTopics(); // NOVA LINHA
     ChartGenerators.generateFFTChart();
     ChartGenerators.generateImportanceChart();
     EventHandlers.updateOneToOneComparison();

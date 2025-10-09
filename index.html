@@ -35,7 +35,7 @@
       </div>
 
       <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
-        <input type="file" id="fileInput" multiple accept=".json" style="margin: 0;" />
+        <input type="file" id="fileInput" multiple accept=".json, .csv" style="margin: 0;" />
         
         <input
           type="file"
@@ -74,25 +74,34 @@
           <div class="left-column">
             <div id="file-selector-container"></div>
             <div id="averages"></div>
-          </div>
-
-          <!-- Coluna direita: gráficos principais -->
-          <div class="right-column">
-            <div class="chart-container">
-              <canvas id="barChart"></canvas>
-            </div>
-            <div class="chart-container">
-              <canvas id="radarChart"></canvas>
-            </div>
-            <div class="chart-container">
-              <canvas id="fftChart"></canvas>
-            </div>
-            <div class="chart-container">
-              <canvas id="importanceChart"></canvas>
-            </div>
-          </div>
         </div>
-      </div>
+
+        <!-- Coluna direita: gráficos principais -->
+        <div class="right-column">
+            <div class="chart-container">
+                <canvas id="barChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="radarChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="fftChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="importanceChart"></canvas>
+            </div>
+            <!-- NOVA SEÇÃO: Learning Topics -->
+<div id="learning-topics-section" class="section-container" style="display: none">
+    <h3>Tópicos de Aprendizado</h3>
+    <div id="learning-topics-content">
+        <p>Selecione um respondente para visualizar os tópicos de aprendizado.</p>
+    </div>
+</div>
+        </div>
+    </div>
+</div>
+
+
 
       <!-- SEÇÃO INFERIOR: Benchmark (aparece apenas quando há dados de benchmark) -->
       <div id="benchmark-section" class="section-container" style="display: none">
