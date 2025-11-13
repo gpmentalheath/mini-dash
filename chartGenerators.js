@@ -885,4 +885,36 @@ class ChartGenerators {
         chartContainer.style.position = 'relative';
         chartContainer.appendChild(legend);
     }
+
+static addChartTooltips() {
+  const chartTooltips = {
+    'barChart': 'Gráfico de barras comparando as métricas selecionadas entre os respondentes visíveis. Ideal para identificar padrões e outliers no grupo. Cada cor representa uma métrica diferente.',
+    'radarChart': 'Gráfico de radar mostrando o perfil multidimensional de cada respondente. Permite visualizar pontos fortes e fracos de forma integrada. Cada linha representa um respondente diferente.',
+    'fftChart': 'Análise de engajamento cognitivo baseada na variável cogproc - mostra níveis de processamento mental. Regiões coloridas indicam diferentes estados cognitivos.',
+    'importanceChart': 'Matriz importância vs. desempenho - ajuda a identificar prioridades de desenvolvimento. Quadrantes mostram áreas de força e oportunidades.',
+    'benchmarkChart': 'Comparação visual entre a média do grupo e o benchmark selecionado. Facilita a identificação de gaps de desempenho.',
+    'oneToOneChart': 'Comparação detalhada entre um respondente específico e um caso de benchmark. Mostra diferenças específicas em cada dimensão.',
+    'oneToOneImportanceChart': 'Análise estratégica mostrando importância vs. desempenho na comparação individual. Ajuda a definir prioridades baseadas em impacto.'
+  };
+
+  Object.keys(chartTooltips).forEach(chartId => {
+    const container = document.getElementById(chartId)?.closest('.chart-container');
+    if (container && !container.querySelector('.chart-tooltip')) {
+      const tooltip = document.createElement('div');
+      tooltip.className = 'tooltip chart-tooltip';
+      tooltip.style.position = 'absolute';
+      tooltip.style.top = '10px';
+      tooltip.style.right = '10px';
+      tooltip.innerHTML = `
+        <span style="cursor: help; font-size: 16px; background: #4CAF50; color: white; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">?</span>
+        <span class="tooltiptext">${chartTooltips[chartId]}</span>
+      `;
+      container.style.position = 'relative';
+      container.appendChild(tooltip);
+    }
+  });
+  
+  // Reajustar posições
+  setTimeout(adjustTooltipPosition, 100);
+}
 }

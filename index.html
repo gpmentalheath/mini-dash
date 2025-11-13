@@ -35,28 +35,59 @@
       </div>
 
       <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
-        <input type="file" id="fileInput" multiple accept=".json, .csv" style="margin: 0;" />
+        <div class="tooltip">
+          <input type="file" id="fileInput" multiple accept=".json, .csv" style="margin: 0;" />
+          <span class="tooltiptext">
+            <strong>Upload de Dados dos Respondentes:</strong><br>
+            Selecione arquivos JSON ou CSV contendo os dados dos respondentes.
+          </span>
+        </div>
         
-        <input
-          type="file"
-          id="benchmarkFileInput"
-          accept=".xlsx,.xls"
-          style="margin: 0;"
-        />
+        <div class="tooltip">
+          <input
+            type="file"
+            id="benchmarkFileInput"
+            accept=".xlsx,.xls,.csv"
+            style="margin: 0;"
+          />
+          <span class="tooltiptext">
+            <strong>Upload de Dados de Benchmark:</strong><br>
+            Carregue uma planilha Excel ou CSV com dados de benchmark para comparação.
+          </span>
+        </div>
 
-        <button id="metricsToggleBtn" class="toggle-btn" style="margin: 0;">
-          Seleção Métricas ▼
-        </button>
-        <button id="respondentsToggleBtn" class="toggle-btn" style="margin: 0;">
-          Seleção Respondentes ▼
-        </button>
+        <div class="tooltip">
+          <button id="metricsToggleBtn" class="toggle-btn" style="margin: 0;">
+            Seleção Métricas ▼
+          </button>
+          <span class="tooltiptext">
+            <strong>Controle de Métricas Visíveis:</strong><br>
+            Mostra/oculta a seção para selecionar quais métricas exibir nos gráficos.
+          </span>
+        </div>
+
+        <div class="tooltip">
+          <button id="respondentsToggleBtn" class="toggle-btn" style="margin: 0;">
+            Seleção Respondentes ▼
+          </button>
+          <span class="tooltiptext">
+            <strong>Controle de Respondentes Visíveis:</strong><br>
+            Mostra/oculta a seção para selecionar quais respondentes incluir na análise.
+          </span>
+        </div>
       </div>
 
       <div id="metricsContainer" style="display: none">
+        <div style="margin-bottom: 10px;">
+          <strong>Selecione as métricas para visualização:</strong>
+        </div>
         <div id="checkboxes"></div>
       </div>
 
       <div id="respondentsContainer" style="display: none">
+        <div style="margin-bottom: 10px;">
+          <strong>Selecione os respondentes para análise:</strong>
+        </div>
         <div id="respondent-checkboxes"></div>
       </div>
     </div>
@@ -74,34 +105,33 @@
           <div class="left-column">
             <div id="file-selector-container"></div>
             <div id="averages"></div>
+          </div>
+
+          <!-- Coluna direita: gráficos principais -->
+          <div class="right-column">
+            <div class="chart-container">
+              <canvas id="barChart"></canvas>
+            </div>
+            <div class="chart-container">
+              <canvas id="radarChart"></canvas>
+            </div>
+            <div class="chart-container">
+              <canvas id="fftChart"></canvas>
+            </div>
+            <div class="chart-container">
+              <canvas id="importanceChart"></canvas>
+            </div>
+            
+            <!-- SEÇÃO: Learning Topics -->
+            <div id="learning-topics-section" class="section-container" style="display: none">
+              <h3>Tópicos de Aprendizado</h3>
+              <div id="learning-topics-content">
+                <p>Selecione um respondente para visualizar os tópicos de aprendizado.</p>
+              </div>
+            </div>
+          </div>
         </div>
-
-        <!-- Coluna direita: gráficos principais -->
-        <div class="right-column">
-            <div class="chart-container">
-                <canvas id="barChart"></canvas>
-            </div>
-            <div class="chart-container">
-                <canvas id="radarChart"></canvas>
-            </div>
-            <div class="chart-container">
-                <canvas id="fftChart"></canvas>
-            </div>
-            <div class="chart-container">
-                <canvas id="importanceChart"></canvas>
-            </div>
-            <!-- NOVA SEÇÃO: Learning Topics -->
-<div id="learning-topics-section" class="section-container" style="display: none">
-    <h3>Tópicos de Aprendizado</h3>
-    <div id="learning-topics-content">
-        <p>Selecione um respondente para visualizar os tópicos de aprendizado.</p>
-    </div>
-</div>
-        </div>
-    </div>
-</div>
-
-
+      </div>
 
       <!-- SEÇÃO INFERIOR: Benchmark (aparece apenas quando há dados de benchmark) -->
       <div id="benchmark-section" class="section-container" style="display: none">
@@ -174,5 +204,114 @@
         </div>
       </div>
     </div>
+
+    <script>
+      // Função para ajustar automaticamente a posição dos tooltips
+      function adjustTooltipPosition() {
+        document.querySelectorAll('.tooltip').forEach(tooltip => {
+          const tooltipText = tooltip.querySelector('.tooltiptext');
+          if (!tooltipText) return;
+          
+          tooltip.addEventListener('mouseenter', function() {
+            // Remover todas as classes de posição
+            tooltipText.classList.remove('tooltip-top', 'tooltip-bottom', 'tooltip-left', 'tooltip-right');
+            
+            const tooltipRect = tooltipText.getBoundingClientRect();
+            const triggerRect = tooltip.getBoundingClientRect();
+            
+            // Verificar se é um botão
+            const isButton = tooltip.querySelector('button, .toggle-btn');
+            
+            // Verificar espaço disponível em todas as direções
+            const spaceAbove = triggerRect.top;
+            const spaceBelow = window.innerHeight - triggerRect.bottom;
+            const spaceLeft = triggerRect.left;
+            const spaceRight = window.innerWidth - triggerRect.right;
+            
+            // Para botões, priorizar posições que não cubram o próprio botão
+            let bestDirection = 'bottom';
+            let maxSpace = spaceBelow;
+            
+            if (isButton) {
+              // Para botões, sempre preferir bottom ou top para não cobrir o botão
+              if (spaceBelow >= 200 || spaceBelow >= spaceAbove) {
+                bestDirection = 'bottom';
+              } else {
+                bestDirection = 'top';
+              }
+            } else {
+              // Para outros elementos, lógica normal
+              if (spaceAbove > maxSpace && spaceAbove > 150) {
+                bestDirection = 'top';
+                maxSpace = spaceAbove;
+              }
+              if (spaceRight > maxSpace && spaceRight > 350) {
+                bestDirection = 'right';
+                maxSpace = spaceRight;
+              }
+              if (spaceLeft > maxSpace && spaceLeft > 350) {
+                bestDirection = 'left';
+                maxSpace = spaceLeft;
+              }
+            }
+            
+            // Aplicar a direção escolhida
+            tooltipText.classList.add(`tooltip-${bestDirection}`);
+            
+            // Se for botão, garantir distância extra
+            if (isButton) {
+              if (bestDirection === 'bottom') {
+                tooltipText.style.marginTop = '20px';
+              } else if (bestDirection === 'top') {
+                tooltipText.style.marginBottom = '20px';
+              }
+            }
+            
+            // Ajuste fino para evitar cortes na tela
+            setTimeout(() => {
+              const finalRect = tooltipText.getBoundingClientRect();
+              
+              // Se ainda estiver saindo da tela, ajustar a posição
+              if (finalRect.left < 10) {
+                tooltipText.style.left = '10px';
+                tooltipText.style.transform = 'none';
+              }
+              if (finalRect.right > window.innerWidth - 10) {
+                tooltipText.style.left = 'auto';
+                tooltipText.style.right = '10px';
+                tooltipText.style.transform = 'none';
+              }
+            }, 10);
+          });
+          
+          // Reset na saída do mouse
+          tooltip.addEventListener('mouseleave', function() {
+            const tooltipText = tooltip.querySelector('.tooltiptext');
+            if (tooltipText) {
+              tooltipText.style.left = '';
+              tooltipText.style.right = '';
+              tooltipText.style.transform = '';
+              tooltipText.style.marginTop = '';
+              tooltipText.style.marginBottom = '';
+            }
+          });
+        });
+      }
+
+      // Inicializar quando o DOM estiver carregado
+      document.addEventListener('DOMContentLoaded', function() {
+        adjustTooltipPosition();
+        
+        // Reajustar quando a janela for redimensionada
+        window.addEventListener('resize', function() {
+          adjustTooltipPosition();
+        });
+        
+        // Reajustar após um pequeno delay
+        setTimeout(() => {
+          adjustTooltipPosition();
+        }, 500);
+      });
+    </script>
   </body>
 </html>

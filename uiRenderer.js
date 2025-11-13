@@ -92,16 +92,41 @@ class UIRenderer {
     }
     
     static renderFileSelector() {
-        let selectorHTML = '<label>Comparar com respondente:</label><select onchange="selectFile(this)">';
-        selectorHTML += '<option value="">Nenhum</option>';
-        fileNames.forEach((name, index) => {
-            if (visibleRespondents[index]) {
-                selectorHTML += `<option value="${index}">${name}</option>`;
-            }
-        });
-        selectorHTML += '</select>';
-        document.getElementById('file-selector-container').innerHTML = selectorHTML;
+    const container = document.getElementById('file-selector-container');
+    
+    let selectorHTML = `
+        <div class="file-selector-clean">
+            <label>Comparar com respondente:</label>
+            <div class="select-wrapper">
+                <select onchange="selectFile(this)">
+                    <option value="">Selecione um respondente</option>
+    `;
+    
+    fileNames.forEach((name, index) => {
+        if (visibleRespondents[index]) {
+            const isSelected = selectedFileIndex === index;
+            selectorHTML += `<option value="${index}" ${isSelected ? 'selected' : ''}>${name}</option>`;
+        }
+    });
+    
+    selectorHTML += `
+                </select>
+            </div>
+        </div>
+    `;
+    
+    // Adicionar badge se houver seleção
+    if (selectedFileIndex !== null && visibleRespondents[selectedFileIndex]) {
+        const selectedName = fileNames[selectedFileIndex];
+        selectorHTML += `
+            <div class="selected-respondent-badge" style="margin-top: 10px;">
+                Respondente selecionado: <strong>${selectedName}</strong>
+            </div>
+        `;
     }
+    
+    container.innerHTML = selectorHTML;
+}
     
     static renderComparisonTable() {
         const averagesContainer = document.getElementById('averages');
@@ -157,26 +182,39 @@ class UIRenderer {
             ? ` (${filteredCount} de ${totalVariables} variáveis - ${hiddenCount} ocultas por terem média 0)`
             : ` (${totalVariables} variáveis)`;
 
-        averagesContainer.innerHTML = `
-            <h3>Métricas${selectedFileIndex !== null ? ' - ' + selectedFileName : ''}${summaryText}</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Variável</th>
-                        <th>Média do Grupo</th>
-                        <th>${selectedFileIndex !== null ? selectedFileName : 'Arquivo Selecionado'}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${tableRows}
-                </tbody>
-            </table>
-            ${hiddenCount > 0 ? `
-                <div class="info-box" style="margin-top: 10px; font-size: 12px;">
-                    <strong>Nota:</strong> ${hiddenCount} variáveis com média 0 foram ocultadas para melhor visualização.
-                </div>
-            ` : ''}
-        `;
+            averagesContainer.innerHTML = `
+        <div class="tooltip" style="display: inline-block;">
+        <h3>Métricas${selectedFileIndex !== null ? ' - ' + selectedFileName : ''}${summaryText}</h3>
+        <span class="tooltiptext tooltip-bottom">
+            <strong>Tabela de Métricas Comparativas:</strong><br>
+            Compare os valores individuais com a média do grupo.<br>
+            Cores indicam desempenho acima/abaixo da média.
+        </span>
+        </div>
+        <table>
+        <thead>
+            <tr>
+            <th class="tooltip">Variável
+                <span class="tooltiptext tooltip-bottom">Nome da métrica ou variável analisada</span>
+            </th>
+            <th class="tooltip">Média do Grupo
+                <span class="tooltiptext tooltip-bottom">Média calculada considerando todos os respondentes visíveis</span>
+            </th>
+            <th class="tooltip">${selectedFileIndex !== null ? selectedFileName : 'Arquivo Selecionado'}
+                <span class="tooltiptext tooltip-bottom">Valor individual do respondente selecionado</span>
+            </th>
+            </tr>
+        </thead>
+        <tbody>
+            ${tableRows}
+        </tbody>
+        </table>
+        ${hiddenCount > 0 ? `
+        <div class="info-box" style="margin-top: 10px; font-size: 12px;">
+            <strong>Nota:</strong> ${hiddenCount} variáveis com média 0 foram ocultadas para melhor visualização.
+        </div>
+        ` : ''}
+    `;
     }
     
     static renderBenchmarkComparison() {

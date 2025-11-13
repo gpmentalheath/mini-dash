@@ -22,51 +22,64 @@ class EventHandlers {
         }
     }
 
-    static toggleMetrics() {
-        const container = document.getElementById('metricsContainer');
-        const btn = document.getElementById('metricsToggleBtn');
-        if (container.style.display === 'none') {
-            container.style.display = 'block';
-            btn.textContent = 'Ocultar Métricas ▲';
-            document.querySelector('.header-spacer').style.height = '280px';
-        } else {
-            container.style.display = 'none';
-            btn.textContent = 'Seleção Métricas ▼';
-            document.querySelector('.header-spacer').style.height = '220px';
-        }
+static toggleMetrics() {
+    const container = document.getElementById('metricsContainer');
+    const btn = document.getElementById('metricsToggleBtn');
+    const headerSpacer = document.querySelector('.header-spacer');
+    
+    if (container.style.display === 'none') {
+        container.style.display = 'block';
+        btn.textContent = 'Ocultar Métricas ▲';
+        // A altura será controlada pelo CSS
+    } else {
+        container.style.display = 'none';
+        btn.textContent = 'Seleção Métricas ▼';
+        // A altura será controlada pelo CSS
     }
+    
+    // Reajustar tooltips após toggle
+    setTimeout(adjustTooltipPosition, 100);
+}
 
-    static toggleRespondents() {
-        const container = document.getElementById('respondentsContainer');
-        const btn = document.getElementById('respondentsToggleBtn');
-        if (container.style.display === 'none') {
-            container.style.display = 'block';
-            btn.textContent = 'Ocultar Respondentes ▲';
-            document.querySelector('.header-spacer').style.height = '280px';
-        } else {
-            container.style.display = 'none';
-            btn.textContent = 'Seleção Respondentes ▼';
-            document.querySelector('.header-spacer').style.height = '220px';
-        }
+static toggleRespondents() {
+    const container = document.getElementById('respondentsContainer');
+    const btn = document.getElementById('respondentsToggleBtn');
+    const headerSpacer = document.querySelector('.header-spacer');
+    
+    if (container.style.display === 'none') {
+        container.style.display = 'block';
+        btn.textContent = 'Ocultar Respondentes ▲';
+        // A altura será controlada pelo CSS
+    } else {
+        container.style.display = 'none';
+        btn.textContent = 'Seleção Respondentes ▼';
+        // A altura será controlada pelo CSS
     }
+    
+    // Reajustar tooltips após toggle
+    setTimeout(adjustTooltipPosition, 100);
+}
 
     static refreshAllChartsAndUI() {
-        console.log('Atualizando todas as charts e UI');
-        UIRenderer.renderCheckboxes();
-        UIRenderer.renderRespondentCheckboxes();
-        UIRenderer.renderFileSelector();
-        UIRenderer.renderComparisonTable();
-        UIRenderer.renderLearningTopics(); // NOVA LINHA
+    console.log('Atualizando todas as charts e UI');
+    UIRenderer.renderCheckboxes();
+    UIRenderer.renderRespondentCheckboxes();
+    UIRenderer.renderFileSelector();
+    UIRenderer.renderComparisonTable();
+    UIRenderer.renderLearningTopics();
 
-        ChartGenerators.generateBarChart();
-        ChartGenerators.generateRadarChart();
-        ChartGenerators.generateFFTChart();
-        ChartGenerators.generateImportanceChart();
+    ChartGenerators.generateBarChart();
+    ChartGenerators.generateRadarChart();
+    ChartGenerators.generateFFTChart();
+    ChartGenerators.generateImportanceChart();
 
-        if (benchmarkData) {
-            console.log('Benchmark data encontrado, atualizando UI relacionada');
-            EventHandlers.refreshBenchmarkRelatedUI();
-        }
+    // Adicionar tooltips aos gráficos
+    ChartGenerators.addChartTooltips();
+
+    if (benchmarkData) {
+        console.log('Benchmark data encontrado, atualizando UI relacionada');
+        EventHandlers.refreshBenchmarkRelatedUI();
+    }
     }
 
     static refreshBenchmarkRelatedUI() {
@@ -177,10 +190,55 @@ function selectBenchmarkRow(select) {
     }
 }
 
+
 // Esta função precisa estar disponível globalmente para ser chamada pelo HTML
 function updateOneToOneComparison() {
     EventHandlers.updateOneToOneComparison();
 }
+
+// Função para ajustar automaticamente a posição dos tooltips
+function adjustTooltipPosition() {
+  document.querySelectorAll('.tooltip').forEach(tooltip => {
+    const tooltipText = tooltip.querySelector('.tooltiptext');
+    if (!tooltipText) return;
+    
+    tooltip.addEventListener('mouseenter', function() {
+      const rect = tooltip.getBoundingClientRect();
+      const tooltipRect = tooltipText.getBoundingClientRect();
+      
+      // Remover classes de posição existentes
+      tooltipText.classList.remove('tooltip-top', 'tooltip-bottom', 'tooltip-left', 'tooltip-right');
+      
+      // Verificar espaço disponível em todas as direções
+      const spaceAbove = rect.top;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceLeft = rect.left;
+      const spaceRight = window.innerWidth - rect.right;
+      
+      // Escolher a direção com mais espaço
+      if (spaceBelow >= tooltipRect.height || spaceBelow >= spaceAbove) {
+        tooltipText.classList.add('tooltip-bottom');
+      } else if (spaceAbove >= tooltipRect.height) {
+        tooltipText.classList.add('tooltip-top');
+      } else if (spaceRight >= tooltipRect.width) {
+        tooltipText.classList.add('tooltip-right');
+      } else if (spaceLeft >= tooltipRect.width) {
+        tooltipText.classList.add('tooltip-left');
+      } else {
+        // Fallback para bottom
+        tooltipText.classList.add('tooltip-bottom');
+      }
+    });
+  });
+}
+
+// Inicializar quando o DOM estiver carregado
+document.addEventListener('DOMContentLoaded', function() {
+  adjustTooltipPosition();
+  
+  // Reajustar quando a janela for redimensionada
+  window.addEventListener('resize', adjustTooltipPosition);
+});
 
 // Inicializar eventos
 EventHandlers.init();
